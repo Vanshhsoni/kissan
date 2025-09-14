@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header Section -->
+    <div class="glassmorphic rounded-2xl p-6 mb-6 shadow-lg">
+        <div class="flex items-center space-x-3 mb-2">
+            <div class="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
+                <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold" style="color: var(--primary-color);">
+                    Price List
+                </h1>
+                <p class="text-sm" style="color: var(--text-secondary);">{{ district }} District</p>
+            </div>
+        </div>
+        <p class="text-sm" style="color: var(--text-secondary);">
+            Current market prices per quintal (100 kg) for crops in your district
+        </p>
+    </div>
+
+    <!-- Price Table -->
+    <div class="glassmorphic rounded-2xl overflow-hidden shadow-lg">
+        {% if items %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gradient-to-r from-green-50 to-green-100/50">
+                    <tr>
+                        <th class="px-4 py-4 text-left font-semibold" style="color: var(--primary-color);">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="sprout" class="w-4 h-4"></i>
+                                <span>Crop (Malayalam)</span>
+                            </div>
+                        </th>
+                        <th class="px-4 py-4 text-left font-semibold" style="color: var(--primary-color);">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="globe" class="w-4 h-4"></i>
+                                <span>Crop (English)</span>
+                            </div>
+                        </th>
+                        <th class="px-4 py-4 text-left font-semibold" style="color: var(--primary-color);">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="indian-rupee" class="w-4 h-4"></i>
+                                <span>Price per Quintal</span>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/20">
+                    {% for item in items %}
+                    <tr class="hover:bg-white/10 transition-colors duration-200">
+                        <td class="px-4 py-4">
+                            <div class="font-medium text-base" style="color: var(--text-primary);">
+                                {{ item.crop_malayalam }}
+                            </div>
+                        </td>
+                        <td class="px-4 py-4">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-medium" style="color: var(--text-primary);">
+                                    {{ item.crop_english }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4">
+                            <div class="flex items-center space-x-1">
+                                <span class="text-xl font-bold" style="color: var(--primary-color);">
+                                    ₹{{ item.price_per_quintal_in_inr|floatformat:0 }}
+                                </span>
+                                <span class="text-sm" style="color: var(--text-secondary);">
+                                    /quintal
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-12 px-6">
+            <div class="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                <i data-lucide="search-x" class="w-8 h-8" style="color: var(--text-secondary);"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">
+                No Price Data Available
+            </h3>
+            <p class="text-sm mb-4" style="color: var(--text-secondary);">
+                Price information for {{ district }} district is currently unavailable.
+            </p>
+            <button onclick="window.location.reload()" 
+                    class="px-4 py-2 rounded-lg text-white font-medium hover:shadow-lg transition-all duration-200"
+                    style="background-color: var(--primary-color);">
+                <i data-lucide="refresh-cw" class="w-4 h-4 inline mr-2"></i>
+                Refresh
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Footer Info -->
+    <div class="glassmorphic rounded-xl p-4 mt-6 shadow-lg">
+        <div class="flex items-start space-x-3">
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <i data-lucide="info" class="w-4 h-4 text-blue-600"></i>
+            </div>
+            <div>
+                <h4 class="font-semibold text-sm mb-1" style="color: var(--text-primary);">
+                    Price Information
+                </h4>
+                <p class="text-xs leading-relaxed" style="color: var(--text-secondary);">
+                    Prices are updated regularly and may vary based on quality, market conditions, and location within the district. 
+                    For the most accurate pricing, please contact local mandis or agricultural markets.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Ensure Lucide icons are created after content loads
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    });
+</script>
+
+<style>
+/* Additional styles specific to price list */
+.glassmorphic table {
+    background: transparent;
+}
+
+.glassmorphic tbody tr:hover {
+    background: rgba(56, 224, 123, 0.05);
+}
+
+@media (max-width: 768px) {
+    .glassmorphic table th,
+    .glassmorphic table td {
+        padding: 12px 8px;
+        font-size: 0.875rem;
+    }
+    
+    .glassmorphic table th span,
+    .glassmorphic table td span {
+        font-size: 0.75rem;
+    }
+}
+
+/* Responsive table on mobile */
+@media (max-width: 640px) {
+    .glassmorphic table {
+        font-size: 0.8rem;
+    }
+    
+    .glassmorphic table th i,
+    .glassmorphic table td i {
+        width: 14px;
+        height: 14px;
+    }
+}
+</style>
+{% endblock %}

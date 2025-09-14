@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+  <meta charset="utf-8"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Kisaan - Auth</title>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+  <div class="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
+    <h2 class="text-2xl font-bold text-center mb-6">📱 Mobile Login</h2>
+    <form method="post">
+      {% csrf_token %}
+      <label for="mobile" class="block mb-2 text-gray-700">Enter Mobile Number</label>
+      <input type="text" name="mobile" id="mobile"
+        class="w-full border rounded-lg p-3 mb-4 focus:ring focus:ring-green-400"
+        placeholder="e.g. 9876543210" required>
+      <button type="submit"
+        class="w-full bg-green-500 text-white rounded-lg py-3 hover:bg-green-600">
+        Continue
+      </button>
+    </form>
+  </div>
+</body>
+</html>

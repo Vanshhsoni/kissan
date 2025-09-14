@@ -1,0 +1,16 @@
+crop_malayalam,crop_english,fertilizer,pesticide,irrigation_liters,sunlight_hours,sowing_months,harvesting_months,soil_type,notes,image_url
+അരി,Paddy,Urea 20kg/acre,Yes,500,6-8,Jan-Feb-Mar,Aug-Sep,"അല്ലുവിയൽ, കറുത്ത മണ്ണ്",Sensitive to waterlogging,https://images.pexels.com/photos/2589457/pexels-photo-2589457.jpeg
+പയറു,Green Gram,NPK 10kg/acre,Low,200,5-6,Jun-Jul,Oct-Nov,"മണൽ, ചെങ്കൽ മണ്ണ്",Drought tolerant,https://images.pexels.com/photos/7334141/pexels-photo-7334141.jpeg
+ചീര,Spinach,NPK 5kg/acre,Low,150,4-6,Sep-Oct,Dec-Jan,"മണൽ, ചെങ്കൽ",Grows quickly,https://images.pexels.com/photos/6824475/pexels-photo-6824475.jpeg
+വെളിച്ചേരി,Brinjal,Urea 15kg/acre,Yes,300,6-8,Feb-Mar,Jul-Aug,"ചെങ്കൽ മണ്ണ്, കറുത്ത മണ്ണ്",Requires staking,https://images.pexels.com/photos/5529588/pexels-photo-5529588.jpeg
+മുളക്,Chilli,NPK 10kg/acre,Yes,250,6-7,Jan-Feb,Jun-Jul,"ചെങ്കൽ മണ്ണ്, മണൽ",Pest prone crop,https://images.pexels.com/photos/35010/paprika-fruit-the-inside-of-the-peppers-the-grain-of-paprika.jpg
+കുരുമുളക്,Black Pepper,NPK 12kg/acre,Low,200,4-6,Jun-Jul,Dec-Jan,"അല്ലുവിയൽ, ചെങ്കൽ മണ്ണ്",Shade loving,https://images.pexels.com/photos/5988689/pexels-photo-5988689.jpeg
+തേങ്ങ,Coconut,NPK 25kg/tree,Yes,1000,8-10,Jan-Dec,Jan-Dec,"മണൽ, അല്ലുവിയൽ",Perennial crop,https://images.pexels.com/photos/1652002/pexels-photo-1652002.jpeg
+ജാതി,Cardamom,NPK 12kg/acre,Yes,400,6-8,May-Jun,Dec-Jan,"ചെങ്കൽ മണ്ണ്, അല്ലുവിയൽ",Shade loving and humid,https://kumskitchen.in/cdn/shop/files/BenefitsofGreenTea_7.png?v=1735464744
+അരിവാൾ,Tapioca,NPK 15kg/acre,Low,300,5-6,Mar-Apr,Oct-Nov,"ചെങ്കൽ മണ്ണ്, മണൽ",Drought tolerant,https://3.imimg.com/data3/QA/YR/MY-12635700/tapioca-500x500.jpg
+മഞ്ഞൾ,Turmeric,NPK 20kg/acre,Yes,350,6-8,Feb-Mar,Sep-Oct,"അല്ലുവിയൽ, ചെങ്കൽ മണ്ണ്",Requires humid soil,https://images.pexels.com/photos/4198714/pexels-photo-4198714.jpeg
+ഇല,Ginger,NPK 15kg/acre,Yes,300,5-7,Feb-Mar,Aug-Sep,"ചെങ്കൽ മണ്ണ്, മണൽ",Soil should be well-drained,https://images.pexels.com/photos/1337585/pexels-photo-1337585.jpeg
+കക്കരി,Cucumber,NPK 10kg/acre,Yes,250,6-8,Feb-Mar,May-Jun,"മണൽ, ചെങ്കൽ മണ്ണ്",Climbing support required,https://images.pexels.com/photos/2329440/pexels-photo-2329440.jpeg
+പച്ചമുളക്,Green Chilli,NPK 10kg/acre,Yes,250,6-7,Jan-Feb,Jun-Jul,"മണൽ, ചെങ്കൽ മണ്ണ്",Pest prone crop,https://images.pexels.com/photos/1800247/pexels-photo-1800247.jpeg
+വാഴ,Plantain,NPK 25kg/tree,Yes,800,7-8,Jan-Dec,Jan-Dec,"അല്ലുവിയൽ, മണൽ",Perennial crop,https://images.pexels.com/photos/60581/banana-banana-tree-bunch-of-bananas-fruit-60581.jpeg
+തേങ്ങക്കൈ,Arecanut,NPK 20kg/tree,Yes,600,7-9,Jan-Dec,Jan-Dec,"ചെങ്കൽ മണ്ണ്, അല്ലുവിയൽ",Perennial crop,https://greenverz.com/wp-content/uploads/2024/03/Greenverz_Arecanut.jpg

@@ -1,0 +1,505 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-5xl mx-auto">
+    <div class="bg-white/30 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 text-center mb-8">
+        <h1 class="text-2xl md:text-3xl font-bold mb-2">
+            ഹലോ {{ user.name|default:user.mobile }}
+        </h1>
+        <p class="text-lg md:text-xl">
+            Welcome to your Kissan dashboard 🌱
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+        <!-- Updated Weather Widget -->
+        <div class="bg-white/25 rounded-xl p-4 shadow" data-weather>
+            <p class="text-sm">Weather</p>
+            <p class="text-lg font-semibold">Loading...</p>
+        </div>
+        <div class="bg-white/25 rounded-xl p-4 shadow">
+            <p class="text-sm">Crops</p>
+            <p class="text-lg font-semibold">{{ request.user.crops.count }} Total</p>
+        </div>
+        <div class="bg-white/25 rounded-xl p-4 shadow">
+            <p class="text-sm">Alerts</p>
+            <p class="text-lg font-semibold">2 New</p>
+        </div>
+    </div>
+
+    <h2 class="text-xl font-bold mb-4">My Crops</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        {% for crop in request.user.crops.all %}
+        <a href="{% url 'crop_activity_log' crop.id %}" class="block h-full transition-all duration-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+            <div class="p-4 bg-white/30 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 text-center h-full hover:shadow-xl hover:border-green-300 transition-all duration-300 flex flex-col">
+                <div class="w-full h-32 bg-gradient-to-br from-green-100 to-green-200 rounded-lg mb-3 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {% if crop.image_url %}
+                        <img src="{{ crop.image_url }}" alt="{{ crop.english_name }}" class="w-full h-full object-cover">
+                    {% else %}
+                        <i data-lucide="sprout" class="w-12 h-12 text-green-600"></i>
+                    {% endif %}
+                </div>
+                
+                <div class="flex-grow">
+                    <h3 class="font-bold text-lg text-gray-800">{{ crop.name }}</h3>
+                    <p class="text-gray-600 text-sm">{{ crop.english_name }}</p>
+                
+                    <div class="flex items-center justify-center mt-2 text-xs text-gray-700">
+                        <i data-lucide="droplets" class="w-3 h-3 mr-1 text-blue-500"></i>
+                        {{ crop.irrigation_liters }}L
+                        <i data-lucide="sun" class="w-3 h-3 ml-3 mr-1 text-yellow-500"></i>
+                        {{ crop.sunlight_hours }}h
+                    </div>
+                </div>
+                
+                <div class="mt-2 text-xs font-medium py-1 px-3 rounded-full inline-block self-center {% if crop.is_harvested %}bg-blue-100 text-blue-800{% elif crop.is_sown %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {% if crop.is_harvested %}
+                        Harvested
+                    {% elif crop.is_sown %}
+                        Active
+                    {% else %}
+                        Planning
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+        {% empty %}
+        <div class="col-span-full text-center py-8">
+            <div class="text-gray-500 text-lg mb-2">🌱</div>
+            <p class="text-gray-600">No crops added yet. Tap the + button to get started!</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <button onclick="openCropSelector()" 
+            class="fixed bottom-20 right-6 w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center z-40">
+        <i data-lucide="plus" class="w-6 h-6"></i>
+    </button>
+
+    <div id="cropSelectorModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white/95 backdrop-blur-lg rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-2xl border border-white/20">
+            <div class="sticky top-0 bg-white/90 backdrop-blur-sm border-b border-gray-200/50 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800">Select a Crop</h3>
+                        <p class="text-gray-600 text-sm">Choose from our curated list of Kerala crops</p>
+                    </div>
+                    <button onclick="closeCropSelector()" 
+                            class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 overflow-y-auto max-h-[calc(85vh-120px)]">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for c in crops %}
+                    <button 
+                        onclick="showCropDetails(this)" 
+                        data-crop='{
+                            "crop_malayalam": "{{ c.crop_malayalam|escapejs }}",
+                            "crop_english": "{{ c.crop_english|escapejs }}",
+                            "fertilizer": "{{ c.fertilizer|escapejs }}",
+                            "pesticide": "{{ c.pesticide|escapejs }}",
+                            "irrigation_liters": "{{ c.irrigation_liters|escapejs }}",
+                            "sunlight_hours": "{{ c.sunlight_hours|escapejs }}",
+                            "sowing_months": "{{ c.sowing_months|escapejs }}",
+                            "harvesting_months": "{{ c.harvesting_months|escapejs }}",
+                            "notes": "{{ c.notes|escapejs }}",
+                            "image_url": "{{ c.image_url|escapejs }}"
+                        }'
+                        class="group p-4 bg-white/50 backdrop-blur-sm rounded-xl border border-white/30 hover:border-green-300 hover:bg-white/70 transition-all duration-200 text-left transform hover:scale-[1.02]">
+                        
+                        <div class="w-full h-24 bg-gradient-to-br from-green-100 to-green-200 rounded-lg mb-3 overflow-hidden">
+                            <img src="{{ c.image_url }}" alt="{{ c.crop_english }}" 
+                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                 onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center\'><i data-lucide=\'sprout\' class=\'w-8 h-8 text-green-600\'></i></div>'">
+                        </div>
+                        <div class="font-bold text-gray-800">{{ c.crop_malayalam }}</div>
+                        <div class="text-gray-600 text-sm">{{ c.crop_english }}</div>
+                        <div class="flex items-center mt-2 text-xs text-green-600">
+                            <i data-lucide="droplets" class="w-3 h-3 mr-1"></i>
+                            {{ c.irrigation_liters }}L
+                            <i data-lucide="sun" class="w-3 h-3 ml-3 mr-1"></i>
+                            {{ c.sunlight_hours }}h
+                        </div>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="cropDetailsModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white/95 backdrop-blur-lg rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden shadow-2xl border border-white/20">
+            <div class="sticky top-0 bg-white/90 backdrop-blur-sm border-b border-gray-200/50 p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <button onclick="backToCropSelector()" 
+                                class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                            <i data-lucide="arrow-left" class="w-5 h-5 text-gray-500"></i>
+                        </button>
+                        <div>
+                            <h3 id="cropDetailsTitle" class="text-xl font-bold text-gray-800"></h3>
+                            <p id="cropDetailsSubtitle" class="text-gray-600 text-sm"></p>
+                        </div>
+                    </div>
+                    <button onclick="closeCropDetails()" 
+                            class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 overflow-y-auto max-h-[calc(85vh-180px)]">
+                <div id="cropDetailsImageContainer" class="w-full h-48 bg-gradient-to-br from-green-100 to-green-200 rounded-xl mb-6 overflow-hidden">
+                    </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="p-4 bg-white/50 rounded-lg border border-white/30">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="droplets" class="w-4 h-4 text-blue-500 mr-2"></i>
+                            <span class="font-medium text-gray-700">Irrigation</span>
+                        </div>
+                        <p id="cropIrrigation" class="text-gray-600"></p>
+                    </div>
+                    <div class="p-4 bg-white/50 rounded-lg border border-white/30">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="sun" class="w-4 h-4 text-yellow-500 mr-2"></i>
+                            <span class="font-medium text-gray-700">Sunlight</span>
+                        </div>
+                        <p id="cropSunlight" class="text-gray-600"></p>
+                    </div>
+                    <div class="p-4 bg-white/50 rounded-lg border border-white/30">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="flask-conical" class="w-4 h-4 text-green-500 mr-2"></i>
+                            <span class="font-medium text-gray-700">Fertilizer</span>
+                        </div>
+                        <p id="cropFertilizer" class="text-gray-600"></p>
+                    </div>
+                    <div class="p-4 bg-white/50 rounded-lg border border-white/30">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="shield" class="w-4 h-4 text-red-500 mr-2"></i>
+                            <span class="font-medium text-gray-700">Pesticide</span>
+                        </div>
+                        <p id="cropPesticide" class="text-gray-600"></p>
+                    </div>
+                    <div class="p-4 bg-white/50 rounded-lg border border-white/30 md:col-span-2">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="calendar" class="w-4 h-4 text-purple-500 mr-2"></i>
+                            <span class="font-medium text-gray-700">Growing Season</span>
+                        </div>
+                        <div class="flex items-center space-x-4 text-sm text-gray-600">
+                            <div>
+                                <span class="font-medium">Sowing:</span>
+                                <span id="cropSowing"></span>
+                            </div>
+                            <div>
+                                <span class="font-medium">Harvesting:</span>
+                                <span id="cropHarvesting"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-6">
+                    <div class="flex items-center mb-2">
+                        <i data-lucide="lightbulb" class="w-4 h-4 text-amber-500 mr-2"></i>
+                        <span class="font-medium text-amber-800">Growing Tips</span>
+                    </div>
+                    <p id="cropNotes" class="text-amber-700"></p>
+                </div>
+            </div>
+
+            <div class="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-gray-200/50 p-6">
+                <button onclick="addSelectedCrop()" 
+                        class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-xl font-medium hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
+                    <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>
+                    Add to My Crops
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <form id="addCropForm" method="post" action="{% url 'add_crop' %}" style="display: none;">
+        {% csrf_token %}
+        <input type="hidden" name="malayalam" id="formMalayalam">
+        <input type="hidden" name="english" id="formEnglish">
+        <input type="hidden" name="fertilizer" id="formFertilizer">
+        <input type="hidden" name="pesticide" id="formPesticide">
+        <input type="hidden" name="irrigation_liters" id="formIrrigation">
+        <input type="hidden" name="sunlight_hours" id="formSunlight">
+        <input type="hidden" name="sowing_months" id="formSowing">
+        <input type="hidden" name="harvesting_months" id="formHarvesting">
+        <input type="hidden" name="notes" id="formNotes">
+        <input type="hidden" name="image_url" id="formImageUrl">
+    </form>
+</div>
+
+<div id="toast-notification" class="hidden fixed top-5 right-5 bg-red-600 text-white py-3 px-5 rounded-lg shadow-xl z-50 transform translate-x-full transition-transform duration-300">
+    <p id="toast-message"></p>
+</div>
+<script>
+    // District coordinates mapping (Kerala districts)
+    const DISTRICT_COORDINATES = {
+        "തിരുവനന്തപുരം": { lat: 8.5241, lng: 76.9366, name: "Thiruvananthapuram" },
+        "കൊല്ലം": { lat: 8.8932, lng: 76.6141, name: "Kollam" },
+        "പത്തനംതിട്ട": { lat: 9.2648, lng: 76.7870, name: "Pathanamthitta" },
+        "ആലപ്പുഴ": { lat: 9.4981, lng: 76.3388, name: "Alappuzha" },
+        "കോട്ടയം": { lat: 9.5916, lng: 76.5222, name: "Kottayam" },
+        "ഇടുക്കി": { lat: 9.8560, lng: 76.9774, name: "Idukki" },
+        "എറണാകുളം": { lat: 9.9312, lng: 76.2673, name: "Ernakulam" },
+        "ത്രിശ്ശൂർ": { lat: 10.5276, lng: 76.2144, name: "Thrissur" },
+        "പാലക്കാട്": { lat: 10.7867, lng: 76.6548, name: "Palakkad" },
+        "മലപ്പുറം": { lat: 11.0510, lng: 76.0711, name: "Malappuram" },
+        "കോഴിക്കോട്": { lat: 11.2588, lng: 75.7804, name: "Kozhikode" },
+        "വയനാട്": { lat: 11.6854, lng: 76.1320, name: "Wayanad" },
+        "കണ്ണൂർ": { lat: 11.8745, lng: 75.3704, name: "Kannur" },
+        "കാസർഗോഡ്": { lat: 12.4996, lng: 74.9869, name: "Kasaragod" }
+    };
+
+    // Weather API configuration
+    const WEATHER_CONFIG = {
+        apiKey: 'a38a439451mshb66f632a04aaa95p137671jsn9f7929dd8de6',
+        apiHost: 'open-weather13.p.rapidapi.com',
+        baseUrl: 'https://open-weather13.p.rapidapi.com/current' // Using /current endpoint
+    };
+
+    // Function to get weather data
+    async function fetchWeatherData(district) {
+        try {
+            const coordinates = DISTRICT_COORDINATES[district];
+            if (!coordinates) {
+                throw new Error('District not found');
+            }
+
+            // ✅ CORRECTED URL CONSTRUCTION with 'latitude' and 'longitude'
+            const url = `${WEATHER_CONFIG.baseUrl}?latitude=${coordinates.lat}&longitude=${coordinates.lng}&lang=EN`;
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'x-rapidapi-key': WEATHER_CONFIG.apiKey,
+                    'x-rapidapi-host': WEATHER_CONFIG.apiHost
+                }
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.json(); // APi returns JSON error
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorBody.message}`);
+            }
+
+            const weatherData = await response.json();
+            return {
+                temperature: Math.round(weatherData.main.temp),
+                description: weatherData.weather[0].description,
+                location: coordinates.name,
+                humidity: weatherData.main.humidity,
+                windSpeed: weatherData.wind.speed,
+                icon: weatherData.weather[0].icon
+            };
+        } catch (error) {
+            console.error('Error fetching weather data:', error);
+            return null;
+        }
+    }
+
+    // Function to update weather display
+    function updateWeatherDisplay(weatherData, district) {
+        const weatherElement = document.querySelector('[data-weather]');
+        
+        if (weatherData && weatherElement) {
+            const iconHtml = weatherData.icon ? 
+                `<div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm">Weather</p>
+                        <p class="text-lg font-semibold">${weatherData.temperature}°C in ${weatherData.location}</p>
+                        <p class="text-xs text-gray-600 capitalize">${weatherData.description}</p>
+                    </div>
+                    <img src="https://openweathermap.org/img/wn/${weatherData.icon}.png" alt="Weather" class="w-8 h-8">
+                </div>` :
+                `<p class="text-sm">Weather</p>
+                <p class="text-lg font-semibold">${weatherData.temperature}°C in ${weatherData.location}</p>
+                <p class="text-xs text-gray-600 capitalize">${weatherData.description}</p>`;
+            
+            weatherElement.innerHTML = iconHtml;
+        } else if (weatherElement) {
+            // Fallback to district name if weather fetch fails
+            const coordinates = DISTRICT_COORDINATES[district];
+            const locationName = coordinates ? coordinates.name : 'your area';
+            
+            weatherElement.innerHTML = `
+                <p class="text-sm">Weather</p>
+                <p class="text-lg font-semibold">Weather unavailable</p>
+                <p class="text-xs text-gray-600">Could not fetch data for ${locationName}</p>
+            `;
+        }
+    }
+
+    // Function to initialize weather on page load
+    async function initializeWeather() {
+        // Get user district from Django template context
+        const userDistrict = '{{ user.district|escapejs }}';
+        
+        if (userDistrict && DISTRICT_COORDINATES[userDistrict]) {
+            // Show loading state
+            const weatherElement = document.querySelector('[data-weather]');
+            if (weatherElement) {
+                weatherElement.innerHTML = `
+                    <p class="text-sm">Weather</p>
+                    <p class="text-lg font-semibold">Loading...</p>
+                `;
+            }
+
+            // Fetch and display weather
+            const weatherData = await fetchWeatherData(userDistrict);
+            updateWeatherDisplay(weatherData, userDistrict);
+        }
+    }
+
+    // Using the 'user_crops' sorted list for the duplicate check
+    const addedCrops = new Set([
+        {% for crop in user_crops %}
+            {% if not crop.is_harvested %}
+                "{{ crop.name|escapejs }}",
+            {% endif %}
+        {% endfor %}
+    ]);
+
+    let currentCropData = {};
+
+    function showToast(message) {
+        const toast = document.getElementById('toast-notification');
+        const toastMessage = document.getElementById('toast-message');
+        toastMessage.textContent = message;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.remove('translate-x-full'), 10);
+        setTimeout(() => {
+            toast.classList.add('translate-x-full');
+            setTimeout(() => toast.classList.add('hidden'), 300);
+        }, 3000);
+    }
+
+    function openCropSelector() {
+        document.getElementById('cropSelectorModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => lucide.createIcons(), 50);
+    }
+
+    function closeCropSelector() {
+        document.getElementById('cropSelectorModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    function showCropDetails(button) {
+        try {
+            currentCropData = JSON.parse(button.getAttribute('data-crop'));
+            document.getElementById('cropSelectorModal').classList.add('hidden');
+            document.getElementById('cropDetailsModal').classList.remove('hidden');
+            setTimeout(() => {
+                updateCropDetailsContent();
+                lucide.createIcons();
+            }, 50);
+        } catch (error) {
+            console.error('Error showing crop details:', error);
+            alert('Error loading crop details. Please try again.');
+        }
+    }
+
+    function updateCropDetailsContent() {
+        document.getElementById('cropDetailsTitle').textContent = currentCropData.crop_malayalam || '';
+        document.getElementById('cropDetailsSubtitle').textContent = currentCropData.crop_english || '';
+        document.getElementById('cropFertilizer').textContent = currentCropData.fertilizer || 'Not specified';
+        document.getElementById('cropPesticide').textContent = currentCropData.pesticide || 'Not specified';
+        document.getElementById('cropSowing').textContent = currentCropData.sowing_months || 'Not specified';
+        document.getElementById('cropHarvesting').textContent = currentCropData.harvesting_months || 'Not specified';
+        document.getElementById('cropNotes').textContent = currentCropData.notes || 'No additional notes';
+        document.getElementById('cropIrrigation').textContent = `${currentCropData.irrigation_liters || '0'} Liters (Total)`;
+        document.getElementById('cropSunlight').textContent = `${currentCropData.sunlight_hours || '0'} hours per day`;
+
+        const imageContainer = document.getElementById('cropDetailsImageContainer');
+        imageContainer.innerHTML = '';
+        
+        if (currentCropData.image_url) {
+            const img = document.createElement('img');
+            img.src = currentCropData.image_url;
+            img.alt = currentCropData.crop_english || 'Crop image';
+            img.className = 'w-full h-full object-cover';
+            img.onerror = () => {
+                imageContainer.innerHTML = `<div class="w-full h-full flex items-center justify-center"><i data-lucide="sprout" class="w-16 h-16 text-green-600"></i></div>`;
+                lucide.createIcons();
+            };
+            imageContainer.appendChild(img);
+        } else {
+            imageContainer.innerHTML = `<div class="w-full h-full flex items-center justify-center"><i data-lucide="sprout" class="w-16 h-16 text-green-600"></i></div>`;
+            lucide.createIcons();
+        }
+    }
+
+    function closeCropDetails() {
+        document.getElementById('cropDetailsModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        currentCropData = {};
+    }
+
+    function backToCropSelector() {
+        document.getElementById('cropDetailsModal').classList.add('hidden');
+        document.getElementById('cropSelectorModal').classList.remove('hidden');
+    }
+
+    function addSelectedCrop() {
+        if (!currentCropData.crop_malayalam) {
+            alert('Error: No crop selected.');
+            return;
+        }
+
+        if (addedCrops.has(currentCropData.crop_malayalam)) {
+            showToast('An active cycle for this crop already exists!');
+            return;
+        }
+
+        document.getElementById('formMalayalam').value = currentCropData.crop_malayalam || '';
+        document.getElementById('formEnglish').value = currentCropData.crop_english || '';
+        document.getElementById('formFertilizer').value = currentCropData.fertilizer || '';
+        document.getElementById('formPesticide').value = currentCropData.pesticide || '';
+        document.getElementById('formIrrigation').value = currentCropData.irrigation_liters || '';
+        document.getElementById('formSunlight').value = currentCropData.sunlight_hours || '';
+        document.getElementById('formSowing').value = currentCropData.sowing_months || '';
+        document.getElementById('formHarvesting').value = currentCropData.harvesting_months || '';
+        document.getElementById('formNotes').value = currentCropData.notes || '';
+        document.getElementById('formImageUrl').value = currentCropData.image_url || '';
+
+        document.getElementById('addCropForm').submit();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize weather first
+        initializeWeather();
+        
+        // Initialize lucide icons
+        lucide.createIcons();
+
+        const selectorModal = document.getElementById('cropSelectorModal');
+        const detailsModal = document.getElementById('cropDetailsModal');
+
+        selectorModal.addEventListener('click', (e) => e.target === selectorModal && closeCropSelector());
+        detailsModal.addEventListener('click', (e) => e.target === detailsModal && closeCropDetails());
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (!detailsModal.classList.contains('hidden')) closeCropDetails();
+                else if (!selectorModal.classList.contains('hidden')) closeCropSelector();
+            }
+        });
+    });
+
+    // Optional: Auto-refresh weather every 10 minutes
+    setInterval(async function() {
+        const userDistrict = '{{ user.district|escapejs }}';
+        if (userDistrict && DISTRICT_COORDINATES[userDistrict]) {
+            const weatherData = await fetchWeatherData(userDistrict);
+            updateWeatherDisplay(weatherData, userDistrict);
+        }
+    }, 600000); // 10 minutes
+</script>
+{% endblock %}

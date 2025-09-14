@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Kissan Dashboard{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        :root {
+            --primary-color: #38e07b;
+            --primary-hover-color: #2cc96a;
+            --secondary-color: #f0f4f2;
+            --text-primary: #111714;
+            --text-secondary: #648772;
+        }
+        body {
+            background: linear-gradient(135deg, #f0f4f2 0%, #e8f5e8 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+        .glassmorphic {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .icon-green { color: var(--primary-color); stroke: var(--primary-color); }
+        .nav-item.active { color: var(--primary-color); background: rgba(56, 224, 123, 0.1); }
+        .main-content { padding-top: 80px; padding-bottom: 90px; }
+    </style>
+</head>
+<body>
+    <!-- Top Nav -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glassmorphic">
+        <div class="flex items-center justify-between px-4 py-3 md:px-6">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
+                    <i data-lucide="sprout" class="w-5 h-5 text-white"></i>
+                </div>
+                <h1 class="text-xl md:text-2xl font-bold" style="color: var(--primary-color);">Kissan</h1>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button class="relative p-2 rounded-full hover:bg-white/20">
+                    <i data-lucide="bell" class="w-6 h-6 icon-green"></i>
+                    <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                </button>
+                <button onclick="window.location.href='{% url 'profile_page' %}'" class="p-2 rounded-full hover:bg-white/20">
+                    <i data-lucide="user" class="w-6 h-6 icon-green"></i>
+                </button>
+                <a href="{% url 'logout' %}" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content px-4 md:px-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="fixed bottom-0 left-0 right-0 z-50 glassmorphic border-t border-white/20">
+        <div class="flex items-center justify-around py-3 px-2">
+            <a href="{% url 'dashboard' %}" class="nav-item flex flex-col items-center p-2">
+                <i data-lucide="home" class="w-6 h-6 icon-green"></i>
+                <span class="text-xs font-medium">Home</span>
+            </a>
+            <a href="{% url 'ai_page' %}" class="nav-item flex flex-col items-center p-2">
+                <i data-lucide="brain" class="w-6 h-6 icon-green"></i>
+                <span class="text-xs font-medium">AI Assistant</span>
+            </a>
+            <a href="#" class="nav-item flex flex-col items-center p-2">
+                <i data-lucide="calendar" class="w-6 h-6 icon-green"></i>
+                <span class="text-xs font-medium">Schedule</span>
+            </a>
+            <a href="{% url 'prices_page' %}" class="nav-item flex flex-col items-center p-2">
+                <i data-lucide="indian-rupee" class="w-6 h-6 icon-green"></i>
+                <span class="text-xs font-medium">Prices</span>
+            </a>
+        </div>
+    </nav>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

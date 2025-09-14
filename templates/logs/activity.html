@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-4xl mx-auto p-4 md:p-6">
+    <div class="text-center mb-8">
+        <div class="w-24 h-24 mx-auto rounded-full overflow-hidden border-4 border-white shadow-lg mb-4 bg-green-100">
+            {% if crop.image_url %}
+                <img src="{{ crop.image_url }}" alt="{{ crop.english_name }}" class="w-full h-full object-cover">
+            {% else %}
+                <div class="w-full h-full flex items-center justify-center">
+                    <i data-lucide="sprout" class="w-12 h-12 text-green-600"></i>
+                </div>
+            {% endif %}
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-800">{{ crop.name }}</h1>
+        <p class="text-lg text-gray-600">{{ crop.english_name }}</p>
+    </div>
+
+    <div class="bg-white/50 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 mb-8">
+        <h2 class="text-xl font-bold text-gray-700 mb-4">Crop Details</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="p-4 bg-white/50 rounded-lg border border-white/30">
+                <div class="flex items-center mb-2">
+                    <i data-lucide="droplets" class="w-4 h-4 text-blue-500 mr-2"></i>
+                    <span class="font-medium text-gray-700">Irrigation</span>
+                </div>
+                <p class="text-gray-600">{{ crop.irrigation_liters }} Liters (Total)</p>
+            </div>
+            <div class="p-4 bg-white/50 rounded-lg border border-white/30">
+                <div class="flex items-center mb-2">
+                    <i data-lucide="sun" class="w-4 h-4 text-yellow-500 mr-2"></i>
+                    <span class="font-medium text-gray-700">Sunlight</span>
+                </div>
+                <p class="text-gray-600">{{ crop.sunlight_hours }} hours per day</p>
+            </div>
+            <div class="p-4 bg-white/50 rounded-lg border border-white/30">
+                <div class="flex items-center mb-2">
+                    <i data-lucide="flask-conical" class="w-4 h-4 text-green-500 mr-2"></i>
+                    <span class="font-medium text-gray-700">Fertilizer</span>
+                </div>
+                <p class="text-gray-600">{{ crop.fertilizer }}</p>
+            </div>
+            <div class="p-4 bg-white/50 rounded-lg border border-white/30">
+                <div class="flex items-center mb-2">
+                    <i data-lucide="shield" class="w-4 h-4 text-red-500 mr-2"></i>
+                    <span class="font-medium text-gray-700">Pesticide</span>
+                </div>
+                <p class="text-gray-600">{{ crop.pesticide }}</p>
+            </div>
+            <div class="p-4 bg-white/50 rounded-lg border border-white/30 md:col-span-2">
+                <div class="flex items-center mb-2">
+                    <i data-lucide="calendar" class="w-4 h-4 text-purple-500 mr-2"></i>
+                    <span class="font-medium text-gray-700">Growing Season</span>
+                </div>
+                <div class="flex items-center space-x-4 text-sm text-gray-600">
+                    <div><span class="font-medium">Sowing:</span> {{ crop.sowing_months }}</div>
+                    <div><span class="font-medium">Harvesting:</span> {{ crop.harvesting_months }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div class="flex items-center mb-2">
+                <i data-lucide="lightbulb" class="w-4 h-4 text-amber-500 mr-2"></i>
+                <span class="font-medium text-amber-800">Growing Tips</span>
+            </div>
+            <p class="text-amber-700">{{ crop.notes }}</p>
+        </div>
+    </div>
+
+
+    <div class="bg-white/50 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 mb-8">
+        <h2 class="text-xl font-bold text-gray-700 mb-4">Crop Timeline</h2>
+        
+        <div class="flex items-center justify-between mb-4">
+            {% if crop.is_sown %}
+                <div class="text-green-600 font-semibold flex items-center">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 mr-2"></i>
+                    Sown on {{ crop.sown_date|date:"F j, Y" }}
+                </div>
+            {% else %}
+                <p class="text-gray-600">Crop is in planning stage.</p>
+                <form method="post" class="m-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="sow">
+                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                        Mark as Sown
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+        {% if crop.is_sown %}
+        <div class="flex items-center justify-between">
+            {% if crop.is_harvested %}
+                <div class="text-blue-600 font-semibold flex items-center">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 mr-2"></i>
+                    Harvested on {{ crop.harvested_date|date:"F j, Y" }}
+                </div>
+            {% else %}
+                 <p class="text-gray-600">Crop is currently growing.</p>
+                 <form method="post" class="m-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="harvest">
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                        Mark as Harvested
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if crop.is_sown and crop.is_harvested %}
+        <div class="mt-6 p-4 bg-teal-100 border-l-4 border-teal-500 text-teal-800 rounded-lg">
+            <p class="font-bold">Crop cycle complete!</p>
+            <p>You can now view its history below.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if crop.is_sown and not crop.is_harvested %}
+    <div class="bg-white/50 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 mb-8">
+        <h2 class="text-xl font-bold text-gray-700 mb-4">Today's Activity Log ({{ "now"|date:"F j" }})</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_daily_log">
+            <div class="space-y-4">
+                <label class="flex items-center justify-between p-4 bg-white/70 rounded-lg cursor-pointer">
+                    <span class="flex items-center">
+                        <i data-lucide="droplets" class="w-5 h-5 text-blue-500 mr-3"></i>
+                        <span class="font-medium text-gray-700">Irrigation</span>
+                    </span>
+                    <input type="checkbox" name="did_irrigate" class="h-6 w-6 rounded text-blue-500 focus:ring-blue-400" {% if todays_log.did_irrigate %}checked{% endif %}>
+                </label>
+                <label class="flex items-center justify-between p-4 bg-white/70 rounded-lg cursor-pointer">
+                    <span class="flex items-center">
+                        <i data-lucide="flask-conical" class="w-5 h-5 text-green-500 mr-3"></i>
+                        <span class="font-medium text-gray-700">Fertilizer</span>
+                    </span>
+                    <input type="checkbox" name="did_fertilize" class="h-6 w-6 rounded text-green-500 focus:ring-green-400" {% if todays_log.did_fertilize %}checked{% endif %}>
+                </label>
+                <label class="flex items-center justify-between p-4 bg-white/70 rounded-lg cursor-pointer">
+                    <span class="flex items-center">
+                        <i data-lucide="shield" class="w-5 h-5 text-red-500 mr-3"></i>
+                        <span class="font-medium text-gray-700">Pesticide</span>
+                    </span>
+                    <input type="checkbox" name="did_apply_pesticide" class="h-6 w-6 rounded text-red-500 focus:ring-red-400" {% if todays_log.did_apply_pesticide %}checked{% endif %}>
+                </label>
+            </div>
+            <div class="mt-6">
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02]">
+                    Save Today's Log
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <div class="bg-white/50 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+        <h2 class="text-xl font-bold text-gray-700 mb-6">Calendar History</h2>
+    
+        {# Legend for Calendar Icons #}
+        <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mb-6 text-sm text-gray-600 p-3 bg-gray-50/80 rounded-lg">
+            <span class="flex items-center"><i data-lucide="sprout" class="w-4 h-4 mr-1.5 text-green-600"></i>Sown</span>
+            <span class="flex items-center"><i data-lucide="shovel" class="w-4 h-4 mr-1.5 text-blue-600"></i>Harvested</span>
+            <span class="flex items-center"><i data-lucide="droplets" class="w-4 h-4 mr-1.5 text-blue-500"></i>Irrigated</span>
+            <span class="flex items-center"><i data-lucide="flask-conical" class="w-4 h-4 mr-1.5 text-green-500"></i>Fertilized</span>
+            <span class="flex items-center"><i data-lucide="shield" class="w-4 h-4 mr-1.5 text-red-500"></i>Pesticide</span>
+        </div>
+    
+        {# Main grid for all 12 months #}
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+    
+            {# Loop through each month's data provided by your Django view #}
+            {% for month in calendar_data %}
+            <div class="month-container">
+                {# Month Header #}
+                <h3 class="text-lg font-semibold text-center text-gray-800 mb-3">{{ month.month_name }} {{ month.year }}</h3>
+    
+                {# Day of the Week Headers (S, M, T, W, T, F, S) #}
+                <div class="grid grid-cols-7 text-center text-xs text-gray-500 font-medium mb-1">
+                    <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                </div>
+    
+                {# Grid for all the days in the month #}
+                <div class="grid grid-cols-7 gap-px">
+                    {# Loop through the weeks and days calculated in your view #}
+                    {% for week in month.weeks %}
+                        {% for day in week %}
+                            {% if day.day %}
+                                {# A single day cell. Conditional classes are applied for highlighting. #}
+                                <div class="relative text-center p-1 h-12 flex flex-col justify-center items-center rounded-md
+                                    {% if 'sown' in day.events %}
+                                        bg-green-200 border-2 border-green-500 font-bold text-green-800 shadow-lg z-10 transform scale-105
+                                    {% elif 'harvest' in day.events %}
+                                        bg-blue-200 border-2 border-blue-500 font-bold text-blue-800 shadow-lg z-10 transform scale-105
+                                    {% elif day.events %}
+                                        bg-gray-50
+                                    {% else %}
+                                        bg-white/50
+                                    {% endif %}">
+                                    
+                                    <span class="text-xs">{{ day.day }}</span>
+    
+                                    {# Icons for daily activities #}
+                                    <div class="absolute bottom-0.5 left-0.5 flex items-center space-x-px">
+                                        {% if 'sown' in day.events %}<i data-lucide="sprout" class="w-3 h-3 text-green-600" title="Sown"></i>{% endif %}
+                                        {% if 'harvest' in day.events %}<i data-lucide="shovel" class="w-3 h-3 text-blue-600" title="Harvested"></i>{% endif %}
+    
+                                        {# Only show these icons if it's not a sow or harvest day to keep it clean #}
+                                        {% if 'sown' not in day.events and 'harvest' not in day.events %}
+                                            {% if 'irrigate' in day.events %}<i data-lucide="droplets" class="w-3 h-3 text-blue-500" title="Irrigated"></i>{% endif %}
+                                            {% if 'fertilize' in day.events %}<i data-lucide="flask-conical" class="w-3 h-3 text-green-500" title="Fertilized"></i>{% endif %}
+                                            {% if 'pesticide' in day.events %}<i data-lucide="shield" class="w-3 h-3 text-red-500" title="Pesticide"></i>{% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                {# Empty cell for padding days not in the current month #}
+                                <div class="bg-transparent"></div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-1 md:col-span-2 xl:col-span-3 text-center py-12 text-gray-500">
+                <p>Calendar data is not available.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    </div>
+
+{% endblock %}

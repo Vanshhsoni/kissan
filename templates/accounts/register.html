@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+  <meta charset="utf-8"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Kisaan - Register</title>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+  <div class="bg-white shadow-lg rounded-xl p-8 w-full max-w-lg">
+    <h2 class="text-2xl font-bold text-center mb-6">🌱 Register New Farmer</h2>
+    
+    {% if mobile_from_auth %}
+    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-3 mb-4">
+      <p class="text-sm">📱 Mobile: {{ mobile_from_auth }}</p>
+      <p class="text-xs">Please complete your registration</p>
+    </div>
+    {% endif %}
+    
+    <form method="post">
+      {% csrf_token %}
+      
+      <div class="mb-4">
+        <label for="id_mobile" class="block text-gray-700 text-sm font-bold mb-2">Mobile Number:</label>
+        {{ form.mobile }}
+        {% if form.mobile.errors %}
+          <div class="text-red-500 text-sm mt-1">{{ form.mobile.errors }}</div>
+        {% endif %}
+      </div>
+      
+      <div class="mb-4">
+        <label for="id_name" class="block text-gray-700 text-sm font-bold mb-2">Name:</label>
+        {{ form.name }}
+        {% if form.name.errors %}
+          <div class="text-red-500 text-sm mt-1">{{ form.name.errors }}</div>
+        {% endif %}
+      </div>
+      
+      <div class="mb-4">
+        <label for="id_acreage" class="block text-gray-700 text-sm font-bold mb-2">Acreage:</label>
+        {{ form.acreage }}
+        {% if form.acreage.errors %}
+          <div class="text-red-500 text-sm mt-1">{{ form.acreage.errors }}</div>
+        {% endif %}
+      </div>
+      
+      <div class="mb-4">
+        <label for="id_district" class="block text-gray-700 text-sm font-bold mb-2">District:</label>
+        {{ form.district }}
+        {% if form.district.errors %}
+          <div class="text-red-500 text-sm mt-1">{{ form.district.errors }}</div>
+        {% endif %}
+      </div>
+      
+      <div class="mb-4">
+        <label for="id_pincode" class="block text-gray-700 text-sm font-bold mb-2">Pincode:</label>
+        {{ form.pincode }}
+        {% if form.pincode.errors %}
+          <div class="text-red-500 text-sm mt-1">{{ form.pincode.errors }}</div>
+        {% endif %}
+      </div>
+      
+      <div class="mb-6">
+        <label for="id_soil_type" class="block text-gray-700 text-sm font-bold mb-2">Soil Type:</label>
+        {{ form.soil_type }}
+        {% if form.soil_type.errors %}
+          <div class="text-red-500 text-sm mt-1">{{ form.soil_type.errors }}</div>
+        {% endif %}
+      </div>
+      
+      <button type="submit"
+        class="w-full bg-green-500 text-white rounded-lg py-3 mt-4 hover:bg-green-600 font-bold">
+        Register
+      </button>
+    </form>
+    
+    <div class="text-center mt-4">
+      <a href="{% url 'auth' %}" class="text-blue-500 hover:text-blue-700 text-sm">
+        ← Back to Login
+      </a>
+    </div>
+  </div>
+
+  <style>
+    /* Style form inputs */
+    input, select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      background-color: white;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+  </style>
+</body>
+</html>

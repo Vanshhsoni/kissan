@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Profile - Kissan{% endblock %}
+
+{% block content %}
+<style>
+    body, html {
+        overflow: hidden;
+        height: 100%;
+    }
+    
+</style>
+<div class="relative flex min-h-screen flex-col bg-[#f9fafb] font-sans overflow-hidden">
+  <!-- Top bar with logout -->
+
+
+  <main class="flex-1 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-3xl">
+      <div class="relative bg-white rounded-lg shadow-md overflow-hidden">
+
+        <!-- Header -->
+        <div class="p-6 border-b border-gray-200">
+          <h1 class="text-2xl font-bold text-gray-900">Your Profile</h1>
+          <p class="mt-1 text-sm text-gray-500">Manage your personal and farm information.</p>
+        </div>
+
+        <!-- Edit button (pencil icon) -->
+        <div class="absolute top-4 right-4">
+          <button class="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38e07b]">
+            <i data-lucide="edit-2" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Profile details -->
+        <div class="p-6 space-y-6">
+          <div>
+            <h3 class="text-sm font-medium text-gray-700">Name</h3>
+            <p class="mt-1 text-base text-gray-900">{{ user.name }}</p>
+          </div>
+
+          <div>
+            <h3 class="text-sm font-medium text-gray-700">Phone Number</h3>
+            <p class="mt-1 text-base text-gray-900">+91 {{ user.mobile }}</p>
+          </div>
+
+          <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+            <div>
+              <h3 class="text-sm font-medium text-gray-700">Soil Type</h3>
+              <p class="mt-1 text-base text-gray-900">{{ user.soil_type }}</p>
+            </div>
+            <div>
+              <h3 class="text-sm font-medium text-gray-700">District</h3>
+              <p class="mt-1 text-base text-gray-900">{{ user.district }}</p>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-sm font-medium text-gray-700">Pin Code</h3>
+            <p class="mt-1 text-base text-gray-900">{{ user.pincode }}</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Initialize Lucide icons
+  lucide.createIcons();
+</script>
+
+{% endblock %}
