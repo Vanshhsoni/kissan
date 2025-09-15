@@ -51,10 +51,13 @@ class ActivityLog(models.Model):
 
 # This model is for sending advice TO the farmer. It's separate from the daily logs.
 class Advisory(models.Model):
+    CATEGORY_CHOICES = [
+        ("URGENT", "Urgent"),
+        ("ROUTINE", "Routine"),
+        ("TIP", "Tip"),
+    ]
     crop = models.ForeignKey(Crop, on_delete=models.CASCADE, related_name="advisories")
-    message = models.TextField()  # e.g. "Rain expected, avoid irrigation"
-    date = models.DateField(auto_now_add=True)
+    message = models.TextField()
+    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default="TIP")
+    date = models.DateField(default=timezone.now)
     is_acknowledged = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"Advisory for {self.crop.name} on {self.date}"

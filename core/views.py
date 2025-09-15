@@ -4,6 +4,12 @@ import os
 import calendar
 from datetime import date
 import pandas as pd
+import csv
+from pathlib import Path
+from django.conf import settings
+from django.core.paginator import Paginator
+from django.shortcuts import render
+from django.utils.html import escape
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
@@ -244,3 +250,127 @@ def prices_page(request):
     items = df_filtered.to_dict(orient="records")
 
     return render(request, "core/prices.html", {"items": items, "district": user_district})
+
+def gov_schemes(request):
+    """
+    Read data/kerala_schemes.csv and render gov_scheme.html
+    """
+    csv_path = Path(settings.BASE_DIR) / "database" / "gov_scheme.csv"
+    schemes = []
+    if csv_path.exists():
+        with open(csv_path, newline='', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                # Ensure keys exist and strip whitespace
+                scheme = {
+                    'name': row.get('Scheme Name', '').strip(),
+                    'department': row.get('Department / Authority', '').strip(),
+                    'category': row.get('Category', '').strip(),
+                    'eligibility': row.get('Eligibility / Key Points', '').strip(),
+                    'benefits': row.get('Benefits', '').strip(),
+                    'link': row.get('Official Website / More Info', '').strip(),
+                }
+                # Optional: keep only non-empty rows
+                if scheme['name']:
+                    schemes.append(scheme)
+    else:
+        # if file missing, pass empty and show message in template
+        schemes = []
+
+    # simple pagination - 10 per page
+    paginator = Paginator(schemes, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "core/gov_scheme.html", {
+        "schemes_page": page_obj,
+        "total": len(schemes)
+    })
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from .models import Crop, Advisory
+from .advisory_engine import generate_advisories_for_crop
+
+# Add this to your views.py (replace the existing advisory_page function)
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from .models import Crop, Advisory
+from .advisory_engine import generate_advisories_for_crop, get_weather_summary
+from django.utils import timezone
+from django.db.models import Q
+from datetime import timedelta
+
+from collections import defaultdict
+
+def advisory_page(request):
+    user = request.user
+    crops = Crop.objects.filter(user=user)
+
+    all_advisories = []
+
+    for crop in crops:
+        advisories_qs = crop.advisories.order_by("-date")  # assuming related_name="advisories"
+        
+        grouped = {
+            "urgent": advisories_qs.filter(category="URGENT"),
+            "routine": advisories_qs.filter(category="ROUTINE"),
+            "tips": advisories_qs.filter(category="TIP"),
+            "all": advisories_qs
+        }
+
+        all_advisories.append({
+            "crop": crop,
+            "advisories": grouped,
+            "unread_count": advisories_qs.filter(is_acknowledged=False).count(),
+            "has_urgent": advisories_qs.filter(category="URGENT").exists(),
+            "crop_age": (timezone.now().date() - crop.sown_date).days if crop.is_sown and crop.sown_date else None,
+        })
+
+    context = {
+        "all_advisories": all_advisories,
+        "stats": {
+            "active_crops": crops.count(),
+            "total_advisories": sum(c["advisories"]["all"].count() for c in all_advisories),
+            "urgent_count": sum(c["advisories"]["urgent"].count() for c in all_advisories),
+            "unread_total": sum(c["unread_count"] for c in all_advisories),
+        },
+        "user_district": getattr(user, "district", "Unknown"),
+        "weather_summary": {"status": "unavailable"}  # or however you're setting it
+    }
+    return render(request, "core/advisory.html", context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def mark_advisory_acknowledged(request, advisory_id):
+    """
+    Mark an advisory as acknowledged/read
+    """
+    try:
+        advisory = Advisory.objects.get(
+            id=advisory_id,
+            crop__user=request.user
+        )
+        advisory.is_acknowledged = True
+        advisory.save()
+        return JsonResponse({"status": "success"})
+    except Advisory.DoesNotExist:
+        return JsonResponse({"status": "error", "message": "Advisory not found"}, status=404)
+
+@login_required
+@require_http_methods(["GET"])
+def refresh_weather_advisory(request):
+    """
+    AJAX endpoint to refresh weather data without page reload
+    """
+    weather_summary = get_weather_summary(request.user.district)
+    return JsonResponse(weather_summary)
+
+# Add these URLs to your urlpatterns in urls.py:
+# path("advisory/", views.advisory_page, name="advisory_page"),
+# path("advisory/mark-read/<int:advisory_id>/", views.mark_advisory_acknowledged, name="mark_advisory_acknowledged"),
+# path("advisory/refresh-weather/", views.refresh_weather_advisory, name="refresh_weather_advisory"),
