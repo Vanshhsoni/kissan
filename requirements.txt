@@ -1,23 +1,28 @@
+# Core Django
 Django==5.1.6
 
-# If you plan to use Pillow for handling images in models (commonly required for media uploads)
-Pillow>=10.0.0
+# Database
+psycopg2-binary==2.9.9
+dj-database-url==2.2.0
 
-# Optional but usually useful in Django projects
+# Deployment (Render)
+gunicorn==23.0.0
+whitenoise==6.8.2
+python-dotenv==1.0.1
+setuptools>=75.0.0
+
+# Forms & UI
 django-crispy-forms>=2.0
+Pillow>=10.0.0  # image handling
 
-gunicorn
-whitenoise
-psycopg2-binary
-dj-database-url
-dj-database-url
-gunicorn
-whitenoise
-django-cloudinary-storage
-cloudinary
-psycopg2-binary
+# Cloud storage
+django-cloudinary-storage>=0.3.0
+cloudinary>=1.41.0
+
+# Data & CSV Handling
+pandas>=2.2.2
+
+# Payments & Security
 razorpay>=1.4
-python-dotenv>=1.0
 pyjwt>=2.9.0
 cryptography>=43.0.1
-setuptools>=75.0.0
