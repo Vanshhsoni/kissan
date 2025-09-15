@@ -2,7 +2,7 @@
 Django==5.1.6
 
 # Database
-psycopg2-binary==2.9.9
+psycopg[binary]==3.2.3
 dj-database-url==2.2.0
 
 # Deployment (Render)
