@@ -7,7 +7,7 @@ import os
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+DEBUG=True
 # ----------------------------
 # SECURITY SETTINGS
 # ----------------------------
@@ -17,7 +17,7 @@ SECRET_KEY = os.environ.get(
     "django-insecure-f!h(#71a15ms5*rp2@ysmmc4(l#q_w8k8+!7g9ama^0%1tpg@o"  # fallback (for local dev)
 )
 
-DEBUG = os.environ.get("DEBUG", "False") == "True"
+DEBUG = True
 
 # Render provides your custom domain automatically
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".onrender.com"]
@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     # your apps
     "accounts",
     "core",
+    "ai",
 ]
 
 MIDDLEWARE = [

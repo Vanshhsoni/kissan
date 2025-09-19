@@ -2,48 +2,46 @@
 {% load static %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-6">
+<div class="max-w-6xl mx-auto px-4 py-6 animate-fade-in">
+  
   <!-- Header with Stats -->
-  <div class="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 mb-6 text-white shadow-lg">
+  <div class="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 mb-6 text-white shadow-lg animate-fade-in-slow">
     <div class="flex justify-between items-start">
       <div>
         <h1 class="text-3xl font-bold mb-2">🌱 Smart Farm Advisory</h1>
         <p class="text-green-100">Personalized recommendations for your crops in {{ user_district }}</p>
       </div>
-      
-      <!-- Weather Widget (static display, no refresh button) -->
-      
     </div>
     
     <!-- Stats Bar -->
-    <div class="grid grid-cols-4 gap-4 mt-6">
-      <div class="bg-white/10 backdrop-blur rounded-lg p-3">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+      <div class="bg-white/10 backdrop-blur rounded-lg p-3 text-center transition hover:bg-white/20 animate-fade-in">
         <p class="text-2xl font-bold">{{ stats.active_crops }}</p>
-        <p class="text-xs text-green-100">Active Crops</p>
+        <p class="text-xs text-green-100 uppercase tracking-wider">Active Crops</p>
       </div>
-      <div class="bg-white/10 backdrop-blur rounded-lg p-3">
+      <div class="bg-white/10 backdrop-blur rounded-lg p-3 text-center transition hover:bg-white/20 animate-fade-in">
         <p class="text-2xl font-bold">{{ stats.total_advisories }}</p>
-        <p class="text-xs text-green-100">Total Advisories</p>
+        <p class="text-xs text-green-100 uppercase tracking-wider">Recent Advice</p>
       </div>
-      <div class="bg-white/10 backdrop-blur rounded-lg p-3">
-        <p class="text-2xl font-bold {% if stats.urgent_count > 0 %}text-yellow-300{% endif %}">
+      <div class="bg-white/10 backdrop-blur rounded-lg p-3 text-center transition hover:bg-white/20 animate-fade-in">
+        <p class="text-2xl font-bold {% if stats.urgent_count > 0 %}text-yellow-300 animate-pulse{% endif %}">
           {{ stats.urgent_count }}
         </p>
-        <p class="text-xs text-green-100">Urgent Actions</p>
+        <p class="text-xs text-green-100 uppercase tracking-wider">Urgent</p>
       </div>
-      <div class="bg-white/10 backdrop-blur rounded-lg p-3">
+      <div class="bg-white/10 backdrop-blur rounded-lg p-3 text-center transition hover:bg-white/20 animate-fade-in">
         <p class="text-2xl font-bold" id="unread-count">{{ stats.unread_total }}</p>
-        <p class="text-xs text-green-100">Unread</p>
+        <p class="text-xs text-green-100 uppercase tracking-wider">Unread</p>
       </div>
     </div>
   </div>
 
   <!-- No Crops Message -->
   {% if not all_advisories %}
-    <div class="bg-white rounded-xl shadow-md p-8 text-center">
+    <div class="bg-white rounded-xl shadow-md p-8 text-center animate-fade-in">
       <div class="text-6xl mb-4">🌾</div>
-      <h2 class="text-xl font-bold text-gray-800 mb-2">No Active Crops</h2>
-      <p class="text-gray-600 mb-4">Add crops to your dashboard to receive personalized farming advisories</p>
+      <h2 class="text-xl font-bold text-gray-800 mb-2">No Active Crops Found</h2>
+      <p class="text-gray-600 mb-4">Add a crop to your dashboard to start receiving personalized farming advice.</p>
       <a href="{% url 'add_crop' %}" class="inline-block bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition">
         Add Your First Crop
       </a>
@@ -52,45 +50,42 @@
 
   <!-- Advisory Cards -->
   {% for item in all_advisories %}
-    <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden hover:shadow-lg transition-shadow" data-crop-id="{{ item.crop.id }}">
+    <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden hover:shadow-lg transition-shadow animate-fade-in" data-crop-id="{{ item.crop.id }}">
       <!-- Crop Header -->
-      <div class="bg-gradient-to-r from-green-50 to-green-100 p-4 border-b">
+      <div class="bg-gradient-to-r from-green-50 to-green-100 p-4 border-b border-gray-200">
         <div class="flex justify-between items-center">
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-4">
             {% if item.crop.image_url %}
-              <img src="{{ item.crop.image_url }}" alt="{{ item.crop.english_name }}" 
-                   class="w-12 h-12 rounded-full object-cover border-2 border-white shadow">
+              <img src="{{ item.crop.image_url }}" alt="{{ item.crop.english_name }}" class="w-14 h-14 rounded-full object-cover border-2 border-white shadow">
             {% else %}
-              <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">
+              <div class="w-14 h-14 rounded-full bg-green-500 flex items-center justify-center text-white text-xl font-bold">
                 {{ item.crop.name|first }}
               </div>
             {% endif %}
             <div>
               <h2 class="font-bold text-lg text-gray-800">
                 {{ item.crop.name }}
-                {% if item.crop.english_name %}
-                  <span class="text-sm text-gray-600">({{ item.crop.english_name }})</span>
-                {% endif %}
+                {% if item.crop.english_name %}<span class="text-sm text-gray-600">({{ item.crop.english_name }})</span>{% endif %}
               </h2>
-              {% if item.crop_age %}
+              {% if item.crop_age is not None %}
                 <p class="text-xs text-gray-600">Day {{ item.crop_age }} since sowing</p>
               {% elif item.crop.is_sown %}
                 <p class="text-xs text-gray-600">Sown on {{ item.crop.sown_date|date:"M d, Y" }}</p>
               {% else %}
-                <p class="text-xs text-gray-600">Not yet sown</p>
+                <p class="text-xs text-green-700 font-semibold">Ready to Sow</p>
               {% endif %}
             </div>
           </div>
           
           <div class="flex items-center gap-2">
             {% if item.unread_count > 0 %}
-              <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+              <span class="bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
                 {{ item.unread_count }} new
               </span>
             {% endif %}
             {% if item.has_urgent %}
-              <span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">
-                Urgent Action Required
+              <span class="bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full animate-pulse">
+                URGENT
               </span>
             {% endif %}
           </div>
@@ -101,88 +96,88 @@
       <div class="p-4">
         {% if not item.advisories.all %}
           <div class="text-center py-4 text-gray-500">
-            <p>No advisories for today. Check back tomorrow!</p>
+            <p>No new advisories for today. Check back tomorrow!</p>
           </div>
         {% else %}
-          <!-- Urgent Advisories -->
-          {% if item.advisories.urgent %}
-            <div class="mb-4">
-              <h3 class="text-sm font-semibold text-red-600 mb-2 uppercase tracking-wide">
-                ⚠ Urgent Actions
-              </h3>
-              <div class="space-y-2">
+            <div class="space-y-3">
+                <!-- Urgent Advisories -->
                 {% for adv in item.advisories.urgent %}
-                  <div class="bg-red-50 border-l-4 border-red-500 p-3 rounded-r advisory-item {% if not adv.is_acknowledged %}font-semibold{% endif %}" 
-                       data-id="{{ adv.id }}" data-acknowledged="{{ adv.is_acknowledged|yesno:'true,false' }}">
-                    <div class="flex justify-between items-start">
-                      <p class="text-sm text-gray-800 flex-1">{{ adv.message }}</p>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-1">{{ adv.date|date:"M d" }}</p>
-                  </div>
+                <div class="bg-red-50 border-l-4 border-red-500 p-3 rounded-r-lg advisory-item {% if not adv.is_acknowledged %}font-semibold text-gray-900{% else %}text-gray-600{% endif %}" data-id="{{ adv.id }}">
+                    <p class="text-sm"> <span class="text-red-600">⚠ Urgent:</span> {{ adv.message }}</p>
+                    <p class="text-xs text-gray-500 mt-1 text-right">{{ adv.date|date:"D, M d" }}</p>
+                </div>
                 {% endfor %}
-              </div>
-            </div>
-          {% endif %}
-          
-          <!-- Routine Tasks -->
-          {% if item.advisories.routine %}
-            <div class="mb-4">
-              <h3 class="text-sm font-semibold text-blue-600 mb-2 uppercase tracking-wide">
-                📋 Routine Tasks
-              </h3>
-              <div class="space-y-2">
+                
+                <!-- Routine Tasks -->
                 {% for adv in item.advisories.routine %}
-                  <div class="bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r advisory-item {% if not adv.is_acknowledged %}font-semibold{% endif %}"
-                       data-id="{{ adv.id }}" data-acknowledged="{{ adv.is_acknowledged|yesno:'true,false' }}">
-                    <div class="flex justify-between items-start">
-                      <p class="text-sm text-gray-800 flex-1">{{ adv.message }}</p>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-1">{{ adv.date|date:"M d" }}</p>
-                  </div>
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-lg advisory-item {% if not adv.is_acknowledged %}font-semibold text-gray-900{% else %}text-gray-600{% endif %}" data-id="{{ adv.id }}">
+                    <p class="text-sm"><span class="text-blue-600">📋 Routine:</span> {{ adv.message }}</p>
+                    <p class="text-xs text-gray-500 mt-1 text-right">{{ adv.date|date:"D, M d" }}</p>
+                </div>
                 {% endfor %}
-              </div>
-            </div>
-          {% endif %}
-          
-          <!-- Tips & Information -->
-          {% if item.advisories.tips %}
-            <div class="mb-4">
-              <h3 class="text-sm font-semibold text-green-600 mb-2 uppercase tracking-wide">
-                💡 Tips & Information
-              </h3>
-              <div class="space-y-2">
+
+                <!-- Tips & Information -->
                 {% for adv in item.advisories.tips %}
-                  <div class="bg-green-50 border-l-4 border-green-400 p-3 rounded-r advisory-item {% if not adv.is_acknowledged %}font-semibold{% endif %}"
-                       data-id="{{ adv.id }}" data-acknowledged="{{ adv.is_acknowledged|yesno:'true,false' }}">
-                    <div class="flex justify-between items-start">
-                      <p class="text-sm text-gray-800 flex-1">{{ adv.message }}</p>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-1">{{ adv.date|date:"M d" }}</p>
-                  </div>
+                <div class="bg-green-50 border-l-4 border-green-500 p-3 rounded-r-lg advisory-item {% if not adv.is_acknowledged %}font-semibold text-gray-900{% else %}text-gray-600{% endif %}" data-id="{{ adv.id }}">
+                    <p class="text-sm"><span class="text-green-600">💡 Tip:</span> {{ adv.message }}</p>
+                    <p class="text-xs text-gray-500 mt-1 text-right">{{ adv.date|date:"D, M d" }}</p>
+                </div>
                 {% endfor %}
-              </div>
             </div>
-          {% endif %}
         {% endif %}
         
-        <!-- Action Buttons (no "Mark All as Read" and no refresh) -->
-        <div class="flex justify-between items-center mt-4 pt-4 border-t">
-          <a href="{% url 'crop_activity_log' item.crop.id %}" 
-             class="text-sm text-blue-600 hover:text-blue-800 transition">
-            View Activity Log →
+        <div class="mt-4 pt-4 border-t flex justify-end">
+          <a href="{% url 'crop_activity_log' item.crop.id %}" class="text-sm text-green-600 hover:text-green-800 font-semibold transition">
+            View & Update Activity Log →
           </a>
         </div>
       </div>
     </div>
   {% endfor %}
-  
-  <!-- Footer Actions -->
-  {% if all_advisories %}
-    <div class="text-center mt-8">
-      <p class="text-sm text-gray-600 mb-4">
-        Advisories are generated daily based on weather conditions and your crop schedules
-      </p>
-    </div>
-  {% endif %}
 </div>
+
+<!-- Animations -->
+<style>
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.5s ease-out both; }
+.animate-fade-in-slow { animation: fadeIn 1s ease-out both; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const unreadTotalEl = document.getElementById('unread-count');
+
+    document.querySelectorAll('.advisory-item').forEach(item => {
+        if (item.querySelector('.font-semibold')) {
+            item.addEventListener('click', function() {
+                const advisoryId = this.dataset.id;
+                
+                fetch(`/advisory/mark-read/${advisoryId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        this.classList.remove('font-semibold', 'text-gray-900');
+                        this.classList.add('text-gray-600');
+                        
+                        let currentCount = parseInt(unreadTotalEl.textContent, 10);
+                        if (currentCount > 0) {
+                            unreadTotalEl.textContent = currentCount - 1;
+                        }
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        }
+    });
+});
+</script>
 {% endblock %}

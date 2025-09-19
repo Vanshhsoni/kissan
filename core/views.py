@@ -219,9 +219,6 @@ def crop_activity_log(request, crop_id):
     return render(request, "logs/activity.html", context)
 
 
-@login_required
-def ai_page(request):
-    return render(request, "core/ai.html")
 
 
 def logout_view(request):
@@ -305,16 +302,36 @@ from django.db.models import Q
 from datetime import timedelta
 
 from collections import defaultdict
+# core/views.py
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from .models import Crop, Advisory
+# Import the new generation function
+from .advisory_engine import generate_advisories_for_crop, get_weather_summary
+from django.utils import timezone
+
+@login_required
 def advisory_page(request):
     user = request.user
-    crops = Crop.objects.filter(user=user)
+    crops = Crop.objects.filter(user=user, is_harvested=False) # Only show active crops
 
     all_advisories = []
 
+    # !! KEY CHANGE: Generate advisories for each crop before displaying !!
     for crop in crops:
-        advisories_qs = crop.advisories.order_by("-date")  # assuming related_name="advisories"
-        
+        generate_advisories_for_crop(crop)
+
+    # Now, fetch the newly created (or existing) advisories to display
+    for crop in crops:
+        # Fetch advisories from the last 7 days to give some context
+        advisories_qs = crop.advisories.filter(
+            date__gte=timezone.now().date() - timedelta(days=7)
+        ).order_by("-date")
+
+        # Group them by category for the template
         grouped = {
             "urgent": advisories_qs.filter(category="URGENT"),
             "routine": advisories_qs.filter(category="ROUTINE"),
@@ -326,7 +343,7 @@ def advisory_page(request):
             "crop": crop,
             "advisories": grouped,
             "unread_count": advisories_qs.filter(is_acknowledged=False).count(),
-            "has_urgent": advisories_qs.filter(category="URGENT").exists(),
+            "has_urgent": advisories_qs.filter(category="URGENT", is_acknowledged=False).exists(),
             "crop_age": (timezone.now().date() - crop.sown_date).days if crop.is_sown and crop.sown_date else None,
         })
 
@@ -339,7 +356,6 @@ def advisory_page(request):
             "unread_total": sum(c["unread_count"] for c in all_advisories),
         },
         "user_district": getattr(user, "district", "Unknown"),
-        "weather_summary": {"status": "unavailable"}  # or however you're setting it
     }
     return render(request, "core/advisory.html", context)
 
@@ -348,24 +364,26 @@ def advisory_page(request):
 @require_http_methods(["POST"])
 def mark_advisory_acknowledged(request, advisory_id):
     """
-    Mark an advisory as acknowledged/read
+    Mark an advisory as acknowledged/read. (No changes needed here)
     """
     try:
         advisory = Advisory.objects.get(
             id=advisory_id,
             crop__user=request.user
         )
-        advisory.is_acknowledged = True
-        advisory.save()
+        if not advisory.is_acknowledged:
+            advisory.is_acknowledged = True
+            advisory.save()
         return JsonResponse({"status": "success"})
     except Advisory.DoesNotExist:
         return JsonResponse({"status": "error", "message": "Advisory not found"}, status=404)
+
 
 @login_required
 @require_http_methods(["GET"])
 def refresh_weather_advisory(request):
     """
-    AJAX endpoint to refresh weather data without page reload
+    AJAX endpoint to refresh weather data without page reload. (No changes needed here)
     """
     weather_summary = get_weather_summary(request.user.district)
     return JsonResponse(weather_summary)
