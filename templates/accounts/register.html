@@ -19,13 +19,7 @@
     <form method="post">
       {% csrf_token %}
       
-      <div class="mb-4">
-        <label for="id_mobile" class="block text-gray-700 text-sm font-bold mb-2">Mobile Number:</label>
-        {{ form.mobile }}
-        {% if form.mobile.errors %}
-          <div class="text-red-500 text-sm mt-1">{{ form.mobile.errors }}</div>
-        {% endif %}
-      </div>
+
       
       <div class="mb-4">
         <label for="id_name" class="block text-gray-700 text-sm font-bold mb-2">Name:</label>
@@ -81,6 +75,9 @@
   </div>
 
   <style>
+    body{
+      background: linear-gradient(135deg, #dfffe0 0%, #e8f5e8 100%);
+    }
     /* Style form inputs */
     input, select {
       width: 100%;

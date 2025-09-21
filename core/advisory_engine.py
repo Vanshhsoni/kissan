@@ -87,23 +87,48 @@ def get_weather_forecast(district: str):
 
 def analyze_crop_and_weather(crop: Crop, weather_forecast: list):
     """
-    The core analysis function.
+    The FIXED core analysis function.
     Decides what actions are needed based on logs and weather.
+    Now properly handles unsown crops and prevents illogical advisories.
     """
     today = timezone.now().date()
     advisories = []
 
-    # --- Get Recent Activity ---
-    # Fetch the last log for each activity type
+    # --- CRITICAL FIX: Check if crop is actually sown ---
+    if not crop.is_sown or not crop.sown_date:
+        # For unsown crops, only provide sowing-related advice
+        current_month = today.strftime("%B")
+        if crop.sowing_months and current_month in crop.sowing_months:
+            advisories.append({
+                "message": f"Perfect timing! {current_month} is ideal for sowing {crop.name}. Prepare your field and sow soon.",
+                "category": "URGENT"
+            })
+        else:
+            advisories.append({
+                "message": f"Your {crop.name} is ready to be sown. Check optimal sowing months: {', '.join(crop.sowing_months) if crop.sowing_months else 'Not specified'}.",
+                "category": "TIP"
+            })
+        
+        # Add preparation tips for unsown crops
+        advisories.append({
+            "message": f"Prepare your field with proper soil preparation and ensure good drainage before sowing {crop.name}.",
+            "category": "TIP"
+        })
+        
+        return advisories  # Return early for unsown crops
+
+    # --- Get Recent Activity (Only for sown crops) ---
     last_irrigation_log = ActivityLog.objects.filter(crop=crop, did_irrigate=True).order_by('-date').first()
     last_fertilizer_log = ActivityLog.objects.filter(crop=crop, did_fertilize=True).order_by('-date').first()
     last_pesticide_log = ActivityLog.objects.filter(crop=crop, did_apply_pesticide=True).order_by('-date').first()
 
-    days_since_irrigation = (today - last_irrigation_log.date).days if last_irrigation_log else 99
-    days_since_fertilizer = (today - last_fertilizer_log.date).days if last_fertilizer_log else 99
-    days_since_pesticide = (today - last_pesticide_log.date).days if last_pesticide_log else 99
+    # Calculate days since last activities (with proper defaults)
+    days_since_irrigation = (today - last_irrigation_log.date).days if last_irrigation_log else 0
+    days_since_fertilizer = (today - last_fertilizer_log.date).days if last_fertilizer_log else 0
+    days_since_pesticide = (today - last_pesticide_log.date).days if last_pesticide_log else 0
     
-    crop_age = (today - crop.sown_date).days if crop.is_sown and crop.sown_date else None
+    # Calculate crop age (guaranteed to be valid since crop is sown)
+    crop_age = (today - crop.sown_date).days
 
     # --- Weather Analysis ---
     rain_today = False
@@ -118,82 +143,127 @@ def analyze_crop_and_weather(crop: Crop, weather_forecast: list):
             if today_weather['max_temp'] > 35:
                 high_temp_alert = True
                 advisories.append({
-                    "message": f"High temperature warning ({today_weather['max_temp']}°C). Ensure your crop has enough water.",
+                    "message": f"High temperature warning ({today_weather['max_temp']}°C). Ensure your {crop.name} has adequate water and consider providing shade if possible.",
                     "category": "URGENT"
                 })
             if today_weather['avg_humidity'] > 85:
                 high_humidity_alert = True
         
-        # Check for rain in the next 2 days to advise on holding irrigation
+        # Check for rain in the next 2 days
         rain_in_next_2_days = any(d['will_rain'] for d in weather_forecast[:3])
 
-    # --- Rule-Based Advisory Generation ---
+    # --- Rule-Based Advisory Generation (For Sown Crops Only) ---
 
-    # 1. Irrigation Logic
-    if rain_in_next_2_days:
+    # 1. Irrigation Logic (Smart logic based on crop age and conditions)
+    if crop_age <= 2:
+        # Very young crops need more frequent watering
+        if days_since_irrigation >= 2:
+            advisories.append({
+                "message": f"Young {crop.name} (Day {crop_age}) needs regular watering. Water gently to avoid disturbing roots.",
+                "category": "URGENT"
+            })
+    elif crop_age <= 30:
+        # Established seedlings 
+        if rain_in_next_2_days and days_since_irrigation <= 2:
+            advisories.append({
+                "message": "Rain is expected in the next 2 days. You can skip irrigation today and let nature water your crop.",
+                "category": "TIP"
+            })
+        elif days_since_irrigation >= 3 or (days_since_irrigation >= 2 and high_temp_alert):
+            advisories.append({
+                "message": f"It's been {days_since_irrigation} days since irrigation. Your {crop.name} needs watering.",
+                "category": "ROUTINE"
+            })
+    else:
+        # Mature crops - less frequent watering needed
+        if rain_in_next_2_days and days_since_irrigation <= 3:
+            advisories.append({
+                "message": "Rain expected soon. Your mature crop can wait for natural irrigation.",
+                "category": "TIP"
+            })
+        elif days_since_irrigation >= 4 or (days_since_irrigation >= 3 and high_temp_alert):
+            advisories.append({
+                "message": f"It's been {days_since_irrigation} days since irrigation. Time to water your {crop.name}.",
+                "category": "ROUTINE"
+            })
+    
+    # 2. Fertilizer Logic (Age-based and sensible timing)
+    if crop_age >= 7 and crop_age < 15 and days_since_fertilizer >= 7:
         advisories.append({
-            "message": "Rain is expected in the next 2 days. You may be able to skip irrigation.",
-            "category": "TIP"
-        })
-    elif days_since_irrigation >= 3 or (days_since_irrigation >= 2 and high_temp_alert):
-        advisories.append({
-            "message": f"It's been {days_since_irrigation} days since the last irrigation. It's time to water your crop.",
+            "message": f"Your {crop.name} is {crop_age} days old. First fertilizer application is due. Use a balanced starter fertilizer.",
             "category": "ROUTINE"
         })
-    
-    # 2. Fertilizer Logic
-    # Apply fertilizer after 15 days, and then every 20 days.
-    if crop_age is not None:
-        if 15 <= crop_age < 20 and days_since_fertilizer > 15:
-             advisories.append({
-                "message": f"Your crop is about {crop_age} days old. It's a good time for the first fertilizer application.",
-                "category": "ROUTINE"
-            })
-        elif days_since_fertilizer >= 20:
-             advisories.append({
-                "message": f"It's been {days_since_fertilizer} days. Consider applying fertilizer. Recommended: {crop.fertilizer or 'a balanced NPK mix'}.",
-                "category": "ROUTINE"
-            })
-
-    # 3. Pesticide Logic
-    if high_humidity_alert:
+    elif crop_age >= 15 and crop_age < 25 and days_since_fertilizer >= 15:
         advisories.append({
-            "message": "High humidity increases the risk of fungal diseases. Inspect your plants closely.",
+            "message": f"Second fertilizer application recommended. Your {crop.name} is in active growth phase. Consider: {crop.fertilizer or 'balanced NPK fertilizer'}.",
+            "category": "ROUTINE"
+        })
+    elif crop_age >= 25 and days_since_fertilizer >= 20:
+        advisories.append({
+            "message": f"Regular fertilizer application due ({days_since_fertilizer} days since last). Use: {crop.fertilizer or 'appropriate fertilizer for your crop stage'}.",
+            "category": "ROUTINE"
+        })
+
+    # 3. Pesticide/Disease Management Logic
+    if high_humidity_alert and days_since_pesticide >= 7:
+        advisories.append({
+            "message": f"High humidity ({today_weather['avg_humidity']:.0f}%) increases disease risk. Inspect your {crop.name} for fungal issues and consider preventive treatment.",
             "category": "URGENT"
         })
-    elif days_since_pesticide >= 21:
+    elif crop_age >= 14 and days_since_pesticide >= 21:
         advisories.append({
-            "message": f"It's been {days_since_pesticide} days since the last application. Check for pests. If needed, apply {crop.pesticide or 'an appropriate pesticide'}.",
+            "message": f"Regular pest inspection due. It's been {days_since_pesticide} days. Check for common {crop.name} pests. Apply {crop.pesticide or 'appropriate pesticide'} if needed.",
             "category": "ROUTINE"
+        })
+    elif crop_age >= 7 and days_since_pesticide >= 14 and high_temp_alert:
+        advisories.append({
+            "message": f"Hot weather can increase pest activity. Monitor your {crop.name} closely for signs of pest damage.",
+            "category": "TIP"
         })
 
-    # 4. Sowing/Harvesting Reminders
+    # 4. Harvesting Reminders (Only for mature crops)
     current_month = today.strftime("%B")
-    if not crop.is_sown and crop.sowing_months and current_month in crop.sowing_months:
+    if not crop.is_harvested and crop.harvesting_months and current_month in crop.harvesting_months:
+        if crop_age >= 60:  # Only suggest harvest for mature crops
+            advisories.append({
+                "message": f"Your {crop.name} (Day {crop_age}) might be ready for harvest! Check for maturity signs and harvest at optimal time.",
+                "category": "URGENT"
+            })
+        else:
+            advisories.append({
+                "message": f"Harvest season for {crop.name} is approaching. Monitor your crop closely for signs of maturity.",
+                "category": "TIP"
+            })
+    
+    # 5. Growth Stage Specific Tips
+    if crop_age <= 7:
         advisories.append({
-            "message": f"Now is a great time to sow {crop.name}! The current month is ideal for sowing.",
+            "message": f"Critical establishment phase! Keep soil consistently moist and protect young {crop.name} from extreme weather.",
             "category": "TIP"
         })
-    
-    if crop.is_sown and not crop.is_harvested and crop.harvesting_months and current_month in crop.harvesting_months:
+    elif 8 <= crop_age <= 30:
         advisories.append({
-            "message": f"Your {crop.name} might be ready for harvest. Check for signs of maturity.",
-            "category": "ROUTINE"
-        })
-    
-    # --- Fallback/General Tip ---
-    if not advisories:
-        advisories.append({
-            "message": "Everything looks good! Continue to monitor your crop daily for any changes.",
+            "message": f"Active growth phase for your {crop.name}. Ensure adequate nutrition and regular monitoring for optimal development.",
             "category": "TIP"
         })
-    
-    # Add a generic tip if there are few advisories
+    elif crop_age > 60 and not crop.is_harvested:
+        advisories.append({
+            "message": f"Your {crop.name} is mature (Day {crop_age}). Monitor closely for harvest readiness and maintain proper care until harvest.",
+            "category": "TIP"
+        })
+
+    # --- Fallback for very few advisories ---
     if len(advisories) < 2:
         advisories.append({
-            "message": f"Did you know? Proper sunlight ({crop.sunlight_hours or '6-8'} hours) is crucial for healthy {crop.name} growth.",
+            "message": f"Your {crop.name} is looking good on Day {crop_age}! Continue regular monitoring and maintain consistent care routines.",
             "category": "TIP"
         })
+        
+        if crop.sunlight_hours:
+            advisories.append({
+                "message": f"Ensure your {crop.name} gets adequate sunlight ({crop.sunlight_hours} hours daily) for healthy growth.",
+                "category": "TIP"
+            })
 
     return advisories
 
@@ -202,17 +272,34 @@ def generate_advisories_for_crop(crop: Crop):
     """
     Public function to trigger the advisory generation for a single crop.
     This will delete old advisories and create new ones for today.
+    FIXED: Better cleanup logic and error handling.
     """
     today = timezone.now().date()
     
-    # Clean up old advisories for this crop from today to avoid duplicates
+    # Clean up old advisories (keep last 7 days, remove older ones)
+    one_week_ago = today - timedelta(days=7)
+    deleted_count = Advisory.objects.filter(crop=crop, date__lt=one_week_ago).delete()[0]
+    if deleted_count > 0:
+        logger.info(f"Cleaned up {deleted_count} old advisories for crop {crop.id}")
+    
+    # Clean up today's advisories to avoid duplicates
     Advisory.objects.filter(crop=crop, date=today).delete()
     
     # Fetch fresh weather data
     weather_forecast = get_weather_forecast(crop.user.district)
+    if not weather_forecast:
+        logger.warning(f"Could not fetch weather data for {crop.user.district}. Using fallback logic.")
     
     # Get a list of advisory messages and categories
-    advisory_data = analyze_crop_and_weather(crop, weather_forecast)
+    try:
+        advisory_data = analyze_crop_and_weather(crop, weather_forecast)
+    except Exception as e:
+        logger.error(f"Error analyzing crop {crop.id}: {e}")
+        # Fallback advisory
+        advisory_data = [{
+            "message": f"Unable to generate specific advice right now. Please check your {crop.name} manually and ensure basic care is provided.",
+            "category": "TIP"
+        }]
     
     # Create new Advisory objects in the database
     saved_advisories = []
@@ -229,19 +316,88 @@ def generate_advisories_for_crop(crop: Crop):
     logger.info(f"Generated {len(saved_advisories)} new advisories for crop {crop.id} ({crop.name}).")
     return saved_advisories
 
+
+def cleanup_old_advisories():
+    """
+    Utility function to clean up old advisories across all crops.
+    Call this daily via a management command or cron job.
+    """
+    one_week_ago = timezone.now().date() - timedelta(days=7)
+    deleted_count = Advisory.objects.filter(date__lt=one_week_ago).delete()[0]
+    logger.info(f"Cleaned up {deleted_count} old advisories from database")
+    return deleted_count
+
+
 def get_weather_summary(district: str):
     """
     Simplified weather summary for the AJAX endpoint.
+    Enhanced with better error handling.
     """
     forecast = get_weather_forecast(district)
-    if not forecast or forecast[0]['date'] != timezone.now().date():
-        return {"status": "unavailable", "message": "Weather data could not be fetched."}
+    if not forecast or len(forecast) == 0:
+        return {
+            "status": "unavailable", 
+            "message": "Weather data could not be fetched. Please check your internet connection."
+        }
     
     current_day = forecast[0]
+    
+    # Check if we have today's data
+    if current_day['date'] != timezone.now().date():
+        return {
+            "status": "unavailable", 
+            "message": "Current weather data is not available."
+        }
+    
     return {
         "status": "available",
         "temperature": current_day['max_temp'],
-        "description": f"Max temp {current_day['max_temp']}°C, Min {current_day['min_temp']}°C",
+        "description": f"Max {current_day['max_temp']}°C, Min {current_day['min_temp']}°C",
         "humidity": round(current_day['avg_humidity']),
-        "has_rain": current_day['will_rain']
+        "has_rain": current_day['will_rain'],
+        "rain_amount": current_day.get('total_rain', 0)
     }
+
+
+def mark_all_advisories_read_for_crop(crop_id: int, user):
+    """
+    Mark all unread advisories for a specific crop as read.
+    """
+    try:
+        updated_count = Advisory.objects.filter(
+            crop_id=crop_id,
+            crop__user=user,
+            is_acknowledged=False
+        ).update(is_acknowledged=True)
+        
+        logger.info(f"Marked {updated_count} advisories as read for crop {crop_id}")
+        return updated_count
+    except Exception as e:
+        logger.error(f"Error marking advisories as read for crop {crop_id}: {e}")
+        return 0
+
+
+def get_advisory_stats_for_user(user):
+    """
+    Get advisory statistics for a user.
+    """
+    active_crops = user.crops.filter(is_harvested=False)
+    
+    # Get advisories from last 7 days
+    week_ago = timezone.now().date() - timedelta(days=7)
+    recent_advisories = Advisory.objects.filter(
+        crop__user=user,
+        crop__is_harvested=False,
+        date__gte=week_ago
+    )
+    
+    stats = {
+        "active_crops": active_crops.count(),
+        "total_advisories": recent_advisories.count(),
+        "urgent_count": recent_advisories.filter(category="URGENT").count(),
+        "unread_total": recent_advisories.filter(is_acknowledged=False).count(),
+        "routine_count": recent_advisories.filter(category="ROUTINE").count(),
+        "tips_count": recent_advisories.filter(category="TIP").count(),
+    }
+    
+    return stats

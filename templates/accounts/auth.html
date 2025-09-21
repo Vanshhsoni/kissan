@@ -4,21 +4,119 @@
   <meta charset="utf-8"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <title>Kisaan - Auth</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: sans-serif;
+      color: #111714;
+      background: linear-gradient(135deg, #dfffe0 0%, #e8f5e8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .glass-card {
+      position: relative;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 1rem;
+      padding: 2rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    input:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(56, 224, 123, 0.3);
+      border-color: #38e07b;
+    }
+
+    button {
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #2cc96a;
+    }
+
+    .error-msg {
+      color: red;
+      font-size: 0.875rem;
+      margin-top: -0.5rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    .bg-content {
+      background-image: url("https://images.pexels.com/photos/325944/pexels-photo-325944.jpeg");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      filter: blur(10px);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen">
-  <div class="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
+<body>
+  <div class="glass-card">
     <h2 class="text-2xl font-bold text-center mb-6">📱 Mobile Login</h2>
-    <form method="post">
+    <form method="post" id="loginForm">
       {% csrf_token %}
-      <label for="mobile" class="block mb-2 text-gray-700">Enter Mobile Number</label>
+      <label for="mobile" class="block mb-2 text-whitesmoke-700">Enter Mobile Number</label>
       <input type="text" name="mobile" id="mobile"
-        class="w-full border rounded-lg p-3 mb-4 focus:ring focus:ring-green-400"
+        class="w-full border rounded-lg p-3 mb-1"
         placeholder="e.g. 9876543210" required>
+      <div id="errorMsg" class="error-msg">Enter one more digit</div>
       <button type="submit"
-        class="w-full bg-green-500 text-white rounded-lg py-3 hover:bg-green-600">
+        class="w-full bg-green-500 text-white rounded-lg py-3">
         Continue
       </button>
     </form>
   </div>
+
+  <script>
+    const mobileInput = document.getElementById('mobile');
+    const errorMsg = document.getElementById('errorMsg');
+    const form = document.getElementById('loginForm');
+
+    // Function to check mobile number length
+    function validateMobile() {
+      const value = mobileInput.value.trim();
+      if (/^\d+$/.test(value)) {
+        if (value.length === 10) {
+          errorMsg.style.display = 'none';
+          return true;
+        } else {
+          errorMsg.style.display = 'block';
+          errorMsg.textContent = `Enter ${10 - value.length} more digit${10 - value.length > 1 ? 's' : ''}`;
+          return false;
+        }
+      } else {
+        errorMsg.style.display = 'block';
+        errorMsg.textContent = 'Only numbers allowed';
+        return false;
+      }
+    }
+
+    mobileInput.addEventListener('input', validateMobile);
+
+    form.addEventListener('submit', function(e) {
+      if (!validateMobile()) {
+        e.preventDefault(); // Prevent form submission if invalid
+      }
+    });
+  </script>
 </body>
 </html>

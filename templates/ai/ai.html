@@ -391,6 +391,7 @@
 </style>
 
 <div class="max-w-4xl mx-auto">
+    {% csrf_token %}
     <div class="bg-white/20 backdrop-blur-sm rounded-2xl shadow-xl border border-white/30 chat-container">
         <!-- Header -->
         <div class="flex items-center justify-between p-4 border-b border-white/20">
@@ -497,9 +498,59 @@
     </div>
 </div>
 
-<script>
+        <script>
+    
 (function() {
     'use strict';
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function saveChatToServer(question, response) {
+        const csrftoken = getCookie('csrftoken');
+        const data = {
+            question: question,
+            response: response,
+            language: currentLanguage, // Now has access to this variable
+            session_id: currentChatId,   // And this one
+        };
+
+        fetch('/ai/save_chat/', { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+             if (!response.ok) { // Check for server errors
+                console.error('Server responded with an error:', response.status);
+             }
+             return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                console.log('Chat saved successfully:', data);
+            } else {
+                console.error('Failed to save chat:', data.error);
+            }
+        })
+        .catch((error) => {
+            console.error('Error during fetch:', error);
+        });
+    }
     
     // Configuration
     const API_KEY = 'a38a439451mshb66f632a04aaa95p137671jsn9f7929dd8de6';
@@ -932,59 +983,74 @@
 
     function openHistoryModal() {
         const historyList = document.getElementById('historyList');
-        historyList.innerHTML = '';
-
-        if (savedChats.length === 0) {
-            historyList.innerHTML = '<p style="text-align: center; color: #718096;">No chat history found</p>';
-        } else {
-            savedChats.forEach(function(chat) {
-                const historyItem = document.createElement('div');
-                historyItem.className = 'history-item';
-                historyItem.onclick = function() {
-                    loadChatHistory(chat);
-                };
-                
-                historyItem.innerHTML = '<div class="history-date">' + chat.date + ' • ' + (chat.language === 'ml' ? 'മലയാളം' : 'English') + '</div><div class="history-preview">' + chat.preview + '</div>';
-                
-                historyList.appendChild(historyItem);
-            });
-        }
-
+        historyList.innerHTML = '<p style="text-align: center; color: #718096;">Loading history...</p>';
         historyModal.style.display = 'block';
-    }
+    
+        fetch('/ai/history/')
+            .then(response => response.json())
+            .then(data => {
+                historyList.innerHTML = ''; // Clear "Loading..." message
+                if (data.history && data.history.length > 0) {
+                    data.history.forEach(function(chat) {
+                        const historyItem = document.createElement('div');
+                        historyItem.className = 'history-item';
+                        
+                        // Call a new function to load the specific chat on click
+                        historyItem.onclick = function() {
+                            loadChatHistoryFromServer(chat.id);
+                        };
+                        
+                        const langText = chat.language === 'ml' ? 'മലയാളം' : 'English';
+                        historyItem.innerHTML = `<div class="history-date">${chat.date} • ${langText}</div><div class="history-preview">${chat.preview}</div>`;
+                        
+                        historyList.appendChild(historyItem);
+                    });
+                } else {
+                    historyList.innerHTML = '<p style="text-align: center; color: #718096;">No chat history found</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching chat history:', error);
+                historyList.innerHTML = '<p style="text-align: center; color: #d32f2f;">Could not load history.</p>';
+            });
+    }    
 
     function closeHistoryModal() {
         historyModal.style.display = 'none';
     }
 
-    function loadChatHistory(chat) {
-        // Clear current chat
-        const messages = chatMessages.querySelectorAll('.message');
-        messages.forEach(function(msg) {
-            msg.remove();
-        });
-        
-        welcomeMessage.style.display = 'none';
-        
-        // Load chat data
-        currentChatId = chat.id;
-        currentLanguage = chat.language;
-        
-        // Update UI for language
-        updateLanguageUI();
-        
-        // Display messages
-        chat.messages.forEach(function(msg) {
-            if (msg.role === 'user') {
-                addMessage(msg.content, 'user');
-            } else if (msg.role === 'assistant') {
-                addMessage(msg.content, 'bot');
+    // REPLACE your old loadChatHistory function with this new one
+function loadChatHistoryFromServer(sessionId) {
+    fetch(`/ai/history/${sessionId}/`)
+        .then(response => response.json())
+        .then(data => {
+            // Clear current chat messages
+            chatMessages.innerHTML = '';
+            welcomeMessage.style.display = 'none';
+
+            // Load chat data
+            currentChatId = data.id;
+            
+            // Set language and update UI elements like buttons and placeholders
+            if (currentLanguage !== data.language) {
+                currentLanguage = data.language;
+                updateLanguageUI();
             }
+
+            // Display messages from history
+            data.messages.forEach(function(msg) {
+                const sender = msg.role === 'user' ? 'user' : 'bot';
+                addMessage(msg.content, sender);
+            });
+            
+            closeHistoryModal();
+            messageInput.focus();
+        })
+        .catch(error => {
+            console.error('Error loading chat session:', error);
+            alert('Could not load the selected chat.');
         });
-        
-        closeHistoryModal();
-        messageInput.focus();
-    }
+}
 
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
@@ -994,6 +1060,6 @@
     }
 
 })();
-</script>
+        </script>
 
 {% endblock %}

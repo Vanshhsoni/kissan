@@ -225,9 +225,26 @@ def logout_view(request):
     logout(request)
     return redirect("landing")
 
+from accounts.models import User, DISTRICTS, SOIL_TYPES
+
 @login_required
 def profile_page(request):
-    return render(request,"core/profile.html", {"user": request.user})
+    user = request.user
+    if request.method == "POST":
+        user.name = request.POST.get("name")
+        user.soil_type = request.POST.get("soil_type")
+        user.district = request.POST.get("district")
+        user.pincode = request.POST.get("pincode")
+        user.save()
+
+    context = {
+        "user": user,
+        "soil_choices": SOIL_TYPES,
+        "district_choices": DISTRICTS,
+    }
+    return render(request, "core/profile.html", context)
+
+
 
 @login_required
 def prices_page(request):

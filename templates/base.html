@@ -1,89 +1,175 @@
 <!DOCTYPE html>
-<html lang="ml">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Kissan Dashboard{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <style>
-        :root {
-            --primary-color: #38e07b;
-            --primary-hover-color: #2cc96a;
-            --secondary-color: #f0f4f2;
-            --text-primary: #111714;
-            --text-secondary: #648772;
-        }
-        body {
-            background: linear-gradient(135deg, #f0f4f2 0%, #e8f5e8 100%);
-            min-height: 100vh;
-            color: var(--text-primary);
-        }
-        .glassmorphic {
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-        }
-        .icon-green { color: var(--primary-color); stroke: var(--primary-color); }
-        .nav-item.active { color: var(--primary-color); background: rgba(56, 224, 123, 0.1); }
-        .main-content { padding-top: 80px; padding-bottom: 90px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Kissan Dashboard{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    :root {
+      --primary-color: #38e07b;
+      --primary-hover-color: #2cc96a;
+      --secondary-color: #f0f4f2;
+      --text-primary: #111714;
+      --text-secondary: #648772;
+    }
+    body {
+      background: linear-gradient(135deg, #f0f4f2 0%, #e8f5e8 100%);
+      min-height: 100vh;
+      color: var(--text-primary);
+    }
+    .glassmorphic {
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .icon-green { color: var(--primary-color); stroke: var(--primary-color); }
+    .nav-item.active { color: var(--primary-color); background: rgba(56, 224, 123, 0.1); }
+    .main-content { padding-top: 80px; padding-bottom: 90px; }
+
+    /* Hide Google Translate banner */
+    .goog-te-banner-frame.skiptranslate {
+        width: 0 !important;
+        height: 0 !important;
+        border: none !important;
+        visibility: hidden !important;
+    }
+
+    body { top: 0px !important; }
+
+    /* Hide branding */
+    .goog-logo-link,
+    .goog-te-gadget span,
+    .goog-te-gadget-icon {
+      display: none !important;
+    }
+  </style>
 </head>
 <body>
-    <!-- Top Nav -->
-    <nav class="fixed top-0 left-0 right-0 z-50 glassmorphic">
-        <div class="flex items-center justify-between px-4 py-3 md:px-6">
-            <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
-                    <i data-lucide="sprout" class="w-5 h-5 text-white"></i>
-                </div>
-                <h1 class="text-xl md:text-2xl font-bold" style="color: var(--primary-color);">Kissan</h1>
-            </div>
-
-            <div class="flex items-center space-x-3">
-                <button  onclick="window.location.href='{% url 'advisory_page' %}'" class="relative p-2 rounded-full hover:bg-white/20">
-                    <i data-lucide="bell" class="w-6 h-6 icon-green"></i>
-                    <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-                </button>
-                <button onclick="window.location.href='{% url 'profile_page' %}'" class="p-2 rounded-full hover:bg-white/20">
-                    <i data-lucide="user" class="w-6 h-6 icon-green"></i>
-                </button>
-                <a href="{% url 'logout' %}" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
-                    <i data-lucide="log-out" class="w-4 h-4"></i>
-                </a>
-            </div>
+  <!-- Top Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 glassmorphic">
+    <div class="flex items-center justify-between px-4 py-3 md:px-6">
+      <div class="flex items-center space-x-2">
+        <div class="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
+          <i data-lucide="sprout" class="w-5 h-5 text-white"></i>
         </div>
-    </nav>
+        <h1 class="text-xl md:text-2xl font-bold" style="color: var(--primary-color);">Kissan</h1>
+      </div>
 
-    <!-- Main Content -->
-    <main class="main-content px-4 md:px-6">
-        {% block content %}{% endblock %}
-    </main>
+      <div class="flex items-center space-x-3">
+        <!-- 🔥 Language Switcher -->
+        <select id="langSwitcher" class="border rounded px-2 py-1 text-sm">
+          <option value="en">English</option>
+          <option value="ml">മലയാളം</option>
+        </select>
 
-    <!-- Bottom Nav -->
-    <nav class="fixed bottom-0 left-0 right-0 z-50 glassmorphic border-t border-white/20">
-        <div class="flex items-center justify-around py-3 px-2">
-            <a href="{% url 'dashboard' %}" class="nav-item flex flex-col items-center p-2">
-                <i data-lucide="home" class="w-6 h-6 icon-green"></i>
-                <span class="text-xs font-medium">Home</span>
-            </a>
-            <a href="{% url 'ai:ai_page' %}" class="nav-item flex flex-col items-center p-2">
-                <i data-lucide="brain" class="w-6 h-6 icon-green"></i>
-                <span class="text-xs font-medium">AI Assistant</span>
-            </a>
-            <a href="{% url 'gov_schemes' %}" class="nav-item flex flex-col items-center p-2">
-                <i data-lucide="landmark" class="w-6 h-6 icon-green"></i>
-                <span class="text-xs font-medium">Gov Scheme</span>
-            </a>
-            <a href="{% url 'prices_page' %}" class="nav-item flex flex-col items-center p-2">
-                <i data-lucide="indian-rupee" class="w-6 h-6 icon-green"></i>
-                <span class="text-xs font-medium">Prices</span>
-            </a>
-        </div>
-    </nav>
+        <button onclick="window.location.href='{% url 'advisory_page' %}'" class="relative p-2 rounded-full hover:bg-white/20">
+          <i data-lucide="bell" class="w-6 h-6 icon-green"></i>
+          <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+        </button>
+        <button onclick="window.location.href='{% url 'profile_page' %}'" class="p-2 rounded-full hover:bg-white/20">
+          <i data-lucide="user" class="w-6 h-6 icon-green"></i>
+        </button>
+        <a href="{% url 'logout' %}" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </a>
+      </div>
+    </div>
+  </nav>
 
-    <script>
-        lucide.createIcons();
-    </script>
+  <!-- Main Content -->
+  <main class="main-content px-4 md:px-6">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Bottom Nav -->
+  <nav class="fixed bottom-0 left-0 right-0 z-50 glassmorphic border-t border-white/20">
+    <div class="flex items-center justify-around py-3 px-2">
+      <a href="{% url 'dashboard' %}" class="nav-item flex flex-col items-center p-2">
+        <i data-lucide="home" class="w-6 h-6 icon-green"></i>
+        <span class="text-xs font-medium">Home</span>
+      </a>
+      <a href="{% url 'ai:ai_page' %}" class="nav-item flex flex-col items-center p-2">
+        <i data-lucide="brain" class="w-6 h-6 icon-green"></i>
+        <span class="text-xs font-medium">AI Assistant</span>
+      </a>
+      <a href="{% url 'gov_schemes' %}" class="nav-item flex flex-col items-center p-2">
+        <i data-lucide="landmark" class="w-6 h-6 icon-green"></i>
+        <span class="text-xs font-medium">Gov Scheme</span>
+      </a>
+      <a href="{% url 'prices_page' %}" class="nav-item flex flex-col items-center p-2">
+        <i data-lucide="indian-rupee" class="w-6 h-6 icon-green"></i>
+        <span class="text-xs font-medium">Prices</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hidden Google Translate element -->
+  <div id="google_translate_element" style="display:none;"></div>
+
+  <script>
+    lucide.createIcons();
+
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,ml',
+        autoDisplay: false
+      }, 'google_translate_element');
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      const langSwitcher = document.getElementById("langSwitcher");
+      langSwitcher.addEventListener("change", function() {
+        const lang = this.value;
+        const select = document.querySelector(".goog-te-combo");
+        if (select) {
+          select.value = lang;
+          select.dispatchEvent(new Event("change"));
+        }
+      });
+    });
+  </script>
+
+  <!-- Google Translate JS -->
+  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  <style>
+    .VIpgJd-ZVi9od-ORHb-OEVmcd {
+        left: 0;
+        top: 0;
+        height: 0px;
+        width: 100%;
+        z-index: 10000001;
+        position: fixed;
+        border: none;
+        border-bottom: 1px solid #6B90DA;
+        margin: 0;
+        box-shadow: 0 0 8px 1px #999;
+    }
+    .VIpgJd-ZVi9od-aZ2wEe-OiiCO {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: flex
+    ;
+        -webkit-box-align: center;
+        -webkit-align-items: center;
+        align-items: center;
+        -webkit-box-pack: center;
+        -webkit-justify-content: center;
+        justify-content: center;
+        width: 0px;
+        height: 0px;
+        border-radius: 50px;
+        background: #FFF url(https://www.gstatic.com/images/branding/product/2x/translate_24dp.png) 50% 50% no-repeat;
+        -webkit-transition: all .6s 
+    ease-in-out;
+        transition: all .6s 
+    ease-in-out;
+        -webkit-transform: scale(.4);
+        transform: scale(.4);
+        opacity: 0;
+    }
+  </style>
 </body>
 </html>

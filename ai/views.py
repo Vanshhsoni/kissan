@@ -4,10 +4,13 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import timedelta
 import json
+import uuid
+from .models import *
 from core.models import Crop, ActivityLog, Advisory
 from accounts.models import User
+from django.db.models import Max, F, Subquery, OuterRef
 
 @login_required
 def ai_page(request):
@@ -41,6 +44,7 @@ def ai_page(request):
     }
     
     return render(request, "ai/ai.html", context)
+
 
 @login_required
 @csrf_exempt
@@ -112,7 +116,7 @@ def get_user_context(request):
             }
             advisories_data.append(advisory_info)
         
-        # Get weather context (you might want to integrate with a weather API)
+        # Get weather context
         current_season = get_current_season()
         
         response_data = {
@@ -131,6 +135,7 @@ def get_user_context(request):
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
+
 def get_current_season():
     """
     Determine current agricultural season in Kerala
@@ -144,45 +149,60 @@ def get_current_season():
     else:  # February to May
         return "Summer (വേനൽക്കാലം)"
 
+
 @login_required
 @csrf_exempt
 def save_chat_interaction(request):
     """
-    Save important chat interactions for future reference
+    Save AI chat interactions permanently in DB (ChatLog model)
     """
     if request.method == 'POST':
         try:
+            # Parse request data
             data = json.loads(request.body)
-            user_question = data.get('question', '')
-            ai_response = data.get('response', '')
+            
+            # Extract incoming data with validation
+            user_question = data.get('question', '').strip()
+            ai_response = data.get('response', '').strip()
             language = data.get('language', 'ml')
-            category = data.get('category', 'general')  # general, advice, weather, etc.
+            category = data.get('category', 'GENERAL')
+            crops = data.get('crops', [])
+            session_id = data.get("session_id")
             
-            # You might want to create a ChatLog model to store these
-            # For now, we'll log them or store in session
-            
-            # Store in session for quick access
-            if 'recent_chats' not in request.session:
-                request.session['recent_chats'] = []
-            
-            chat_entry = {
-                'question': user_question,
-                'response': ai_response,
-                'language': language,
-                'category': category,
-                'timestamp': timezone.now().isoformat()
-            }
-            
-            request.session['recent_chats'].insert(0, chat_entry)
-            request.session['recent_chats'] = request.session['recent_chats'][:50]  # Keep last 50
-            request.session.modified = True
-            
-            return JsonResponse({'status': 'success'})
-            
+            # Validate required fields
+            if not user_question or not ai_response:
+                return JsonResponse({'error': 'Question and response are required'}, status=400)
+
+            # Generate session_id if not passed
+            if not session_id:
+                session_id = str(uuid.uuid4())
+
+            # Save to ChatLog model
+            chat = ChatLog.objects.create(
+                user=request.user,
+                session_id=session_id,
+                user_question=user_question,
+                ai_response=ai_response,
+                language=language,
+                category=category,
+                user_district=request.user.district,
+                crops_mentioned=crops if isinstance(crops, list) else []
+            )
+
+            return JsonResponse({
+                'status': 'success',
+                'chat_id': chat.id,
+                'session_id': chat.session_id,
+                'timestamp': chat.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+        except json.JSONDecodeError as e:
+            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
-    
+            return JsonResponse({'error': str(e)}, status=500)
+
     return JsonResponse({'error': 'Method not allowed'}, status=405)
+
 
 @login_required
 def get_farming_tips(request):
@@ -192,7 +212,6 @@ def get_farming_tips(request):
     user = request.user
     current_season = get_current_season()
     
-    # Generate tips based on user's crops and activities
     tips = []
     
     # Season-specific tips
@@ -214,22 +233,112 @@ def get_farming_tips(request):
         if crop.name:
             tips.append(f"{crop.name} വിളയ്ക്കുള്ള പരിചരണം തുടരുക")
     
-    return JsonResponse({'tips': tips[:10]})  # Return max 10 tips
+    return JsonResponse({'tips': tips[:10]})
 
-# You might also want to add these utility functions
+
+@login_required
+def get_chat_history(request):
+    """
+    API endpoint to get a list of all chat sessions for the current user.
+    Fixed version that properly handles session grouping.
+    """
+    # Get unique session IDs with their latest dates
+    session_data = ChatLog.objects.filter(
+        user=request.user
+    ).values('session_id').annotate(
+        last_date=Max('created_at')
+    ).order_by('-last_date')
+    
+    history_list = []
+    for session in session_data:
+        # Get the first chat log for this session to get the first question and language
+        first_log = ChatLog.objects.filter(
+            user=request.user,
+            session_id=session['session_id']
+        ).order_by('created_at').first()
+        
+        if first_log:
+            history_list.append({
+                'id': session['session_id'],
+                'date': session['last_date'].strftime('%Y-%m-%d %H:%M:%S'),
+                'language': first_log.language,
+                'preview': first_log.user_question[:50] + ('...' if len(first_log.user_question) > 50 else '')
+            })
+
+    return JsonResponse({'history': history_list})
+
+
+@login_required
+def get_chat_session(request, session_id):
+    """
+    API endpoint to get all messages for a specific chat session.
+    """
+    # Verify the session belongs to the user
+    chat_logs = ChatLog.objects.filter(
+        user=request.user, 
+        session_id=session_id
+    ).order_by('created_at')
+    
+    if not chat_logs.exists():
+        return JsonResponse({'error': 'Chat session not found'}, status=404)
+
+    messages = []
+    for log in chat_logs:
+        messages.append({'role': 'user', 'content': log.user_question})
+        messages.append({'role': 'assistant', 'content': log.ai_response})
+    
+    # Get the language from the first log entry of the session
+    language = chat_logs.first().language
+
+    return JsonResponse({
+        'messages': messages, 
+        'language': language, 
+        'id': session_id,
+        'total_messages': len(messages)
+    })
+
+
+@login_required
+def debug_chat_logs(request):
+    """
+    Debug view to check if chat logs are being saved
+    """
+    user = request.user
+    
+    # Get all chat logs for the user
+    all_logs = ChatLog.objects.filter(user=user).order_by('-created_at')
+    
+    debug_info = {
+        'total_logs': all_logs.count(),
+        'unique_sessions': ChatLog.objects.filter(user=user).values('session_id').distinct().count(),
+        'recent_logs': []
+    }
+    
+    # Get recent 10 logs with details
+    for log in all_logs[:10]:
+        debug_info['recent_logs'].append({
+            'id': log.id,
+            'session_id': log.session_id,
+            'question': log.user_question[:100],
+            'response': log.ai_response[:100],
+            'created_at': log.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'language': log.language
+        })
+    
+    return JsonResponse(debug_info)
+
 
 def get_weather_advice(district, pincode=None):
     """
     Get weather-based farming advice (integrate with weather API)
     """
-    # This would integrate with a weather service
-    # For now, return generic advice
     return {
         'temperature': 'moderate',
         'humidity': 'high',
         'rainfall': 'expected',
         'advice': 'Good weather for most crops. Monitor for excess moisture.'
     }
+
 
 def get_crop_recommendations(user_profile, season):
     """
@@ -238,10 +347,7 @@ def get_crop_recommendations(user_profile, season):
     recommendations = []
     
     if user_profile.get('district') in ['കോഴിക്കോട്', 'കണ്ണൂർ', 'വയനാട്']:
-        # Northern Kerala recommendations
         if "വർഷാക്കാലം" in season:
             recommendations.extend(['നെൽ', 'കവുങ്ങ്', 'കുരുമുളക്'])
-    
-    # Add more region and season-specific recommendations
     
     return recommendations
