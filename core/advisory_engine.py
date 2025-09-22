@@ -31,7 +31,7 @@ def get_weather_forecast(district: str):
         return None
 
     # IMPORTANT: Replace with your actual, non-expired RapidAPI key
-    api_key = "a38a439451mshb66f632a04aaa95p137671jsn9f7929dd8de6" 
+    api_key = "dc819804a1msh9e7bb9815e6daa0p197e3cjsna5c65c079a07" 
     if not api_key:
         logger.error("RapidAPI key is not set. Weather forecast will not work.")
         return None

@@ -105,6 +105,11 @@
                 <div class="bg-red-50 border-l-4 border-red-500 p-3 rounded-r-lg advisory-item {% if not adv.is_acknowledged %}font-semibold text-gray-900{% else %}text-gray-600{% endif %}" data-id="{{ adv.id }}">
                     <p class="text-sm"> <span class="text-red-600">⚠ Urgent:</span> {{ adv.message }}</p>
                     <p class="text-xs text-gray-500 mt-1 text-right">{{ adv.date|date:"D, M d" }}</p>
+                    {% if not adv.is_acknowledged %}
+                      <button class="mark-btn mt-2 text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 transition">
+                        Mark as Seen
+                      </button>
+                    {% endif %}
                 </div>
                 {% endfor %}
                 
@@ -113,6 +118,11 @@
                 <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-lg advisory-item {% if not adv.is_acknowledged %}font-semibold text-gray-900{% else %}text-gray-600{% endif %}" data-id="{{ adv.id }}">
                     <p class="text-sm"><span class="text-blue-600">📋 Routine:</span> {{ adv.message }}</p>
                     <p class="text-xs text-gray-500 mt-1 text-right">{{ adv.date|date:"D, M d" }}</p>
+                    {% if not adv.is_acknowledged %}
+                      <button class="mark-btn mt-2 text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 transition">
+                        Mark as Seen
+                      </button>
+                    {% endif %}
                 </div>
                 {% endfor %}
 
@@ -121,6 +131,11 @@
                 <div class="bg-green-50 border-l-4 border-green-500 p-3 rounded-r-lg advisory-item {% if not adv.is_acknowledged %}font-semibold text-gray-900{% else %}text-gray-600{% endif %}" data-id="{{ adv.id }}">
                     <p class="text-sm"><span class="text-green-600">💡 Tip:</span> {{ adv.message }}</p>
                     <p class="text-xs text-gray-500 mt-1 text-right">{{ adv.date|date:"D, M d" }}</p>
+                    {% if not adv.is_acknowledged %}
+                      <button class="mark-btn mt-2 text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 transition">
+                        Mark as Seen
+                      </button>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -144,40 +159,72 @@
 }
 .animate-fade-in { animation: fadeIn 0.5s ease-out both; }
 .animate-fade-in-slow { animation: fadeIn 1s ease-out both; }
+
+.advisory-fade-out {
+  animation: fadeOutRight 0.38s forwards ease-in-out;
+}
+@keyframes fadeOutRight {
+  0%   { opacity: 1; transform: translateX(0); max-height: 200px; margin-bottom: 0.75rem; padding: 0.75rem; }
+  100% { opacity: 0; transform: translateX(40px); max-height: 0; margin-bottom: 0; padding: 0; }
+}
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const unreadTotalEl = document.getElementById('unread-count');
+function getCookie(name) {
+  const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return v ? v.pop() : '';
+}
 
-    document.querySelectorAll('.advisory-item').forEach(item => {
-        if (item.querySelector('.font-semibold')) {
-            item.addEventListener('click', function() {
-                const advisoryId = this.dataset.id;
-                
-                fetch(`/advisory/mark-read/${advisoryId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        this.classList.remove('font-semibold', 'text-gray-900');
-                        this.classList.add('text-gray-600');
-                        
-                        let currentCount = parseInt(unreadTotalEl.textContent, 10);
-                        if (currentCount > 0) {
-                            unreadTotalEl.textContent = currentCount - 1;
-                        }
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            });
+document.addEventListener('DOMContentLoaded', function () {
+  const unreadTotalEl = document.getElementById('unread-count');
+
+  document.querySelectorAll('.mark-btn').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const advisoryEl = this.closest('.advisory-item');
+      if (!advisoryEl) return;
+
+      const advisoryId = advisoryEl.dataset.id;
+      this.disabled = true;
+
+      fetch(`mark-read/${advisoryId}/`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+          'Content-Type': 'application/json'
         }
+      })
+      .then(res => res.json().catch(() => ({ status: 'error' })))
+      .then(data => {
+        if (data.status === 'success') {
+          advisoryEl.classList.add('advisory-fade-out');
+
+          advisoryEl.addEventListener('animationend', () => {
+            const cropCard = advisoryEl.closest('[data-crop-id]');
+            advisoryEl.remove();
+
+            if (cropCard && cropCard.querySelectorAll('.advisory-item').length === 0) {
+              cropCard.classList.add('advisory-fade-out');
+              cropCard.addEventListener('animationend', () => cropCard.remove(), { once: true });
+            }
+          }, { once: true });
+
+          if (unreadTotalEl) {
+            const cur = parseInt(unreadTotalEl.textContent || '0', 10);
+            unreadTotalEl.textContent = Math.max(0, cur - 1);
+          }
+        } else {
+          console.error('Mark-as-seen failed', data);
+          this.disabled = false;
+        }
+      })
+      .catch(err => {
+        console.error('Network error while marking advisory:', err);
+        this.disabled = false;
+      });
     });
+  });
 });
 </script>
 {% endblock %}

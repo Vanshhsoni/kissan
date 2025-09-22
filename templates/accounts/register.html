@@ -1,103 +1,488 @@
 <!DOCTYPE html>
-<html lang="ml">
+<html lang="ml-IN">
 <head>
   <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Lucide Icons Script -->
+  <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <title>Kisaan - Register</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&display=swap" rel="stylesheet">
+  <title>Kissan Mitra - രജിസ്ട്രേഷൻ</title>
+  <style>
+    /* Apply Manjari font for authentic Malayalam script rendering */
+    html, body {
+      font-family: 'Manjari', sans-serif;
+    }
+
+    /* Professional deep green gradient */
+    .bg-professional-gradient {
+      background-color: #064e3b;
+      background-image: linear-gradient(145deg, #064e3b 0%, #052e16 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #10b981;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Progress indicator */
+    .progress-step {
+      transition: all 0.3s ease;
+    }
+
+    .progress-step.active {
+      background-color: #10b981;
+      color: white;
+    }
+
+    .progress-step.completed {
+      background-color: #059669;
+      color: white;
+    }
+
+    /* Custom select dropdown styling */
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 1em;
+      padding-right: 2.5rem;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen">
-  <div class="bg-white shadow-lg rounded-xl p-8 w-full max-w-lg">
-    <h2 class="text-2xl font-bold text-center mb-6">🌱 Register New Farmer</h2>
+<body class="bg-professional-gradient flex items-center justify-center min-h-screen p-4">
+
+  <!-- Subtle crop silhouette at the bottom -->
+  <div class="absolute bottom-0 left-0 w-full h-auto opacity-20 z-0">
+    <svg viewBox="0 0 1440 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1440 56.8857V128H0V56.8857C0 56.8857 106.333 30.1833 214 33.3151C321.667 36.4468 362.5 89.3308 506.5 91.5544C650.5 93.778 721.5 13.0088 854 13.0088C986.5 13.0088 1069.17 84.0934 1215.5 80.5375C1361.83 76.9816 1440 56.8857 1440 56.8857Z" fill="white"/>
+    </svg>
+  </div>
+  
+  <div class="bg-white/95 backdrop-blur-sm shadow-xl rounded-2xl p-8 w-full max-w-2xl transition-shadow duration-300 hover:shadow-2xl z-10">
     
+    <!-- Header Section -->
+    <div class="text-center mb-6">
+      <div class="inline-block p-4 bg-emerald-600 rounded-full mb-4">
+        <i data-lucide="user-plus" class="w-6 h-6 text-white"></i>
+      </div>
+      
+      <h1 class="text-3xl font-bold text-slate-800">
+        കർഷക രജിസ്ട്രേഷൻ
+      </h1>
+      <p class="text-slate-500 mt-2">നിങ്ങളുടെ കൃഷി വിവരങ്ങൾ പൂർത്തീകരിക്കുക</p>
+    </div>
+
+    <!-- Progress Indicator -->
+    <div class="flex justify-center mb-6">
+      <div class="flex items-center space-x-2">
+        <div class="progress-step completed w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">
+          <i data-lucide="check" class="w-4 h-4"></i>
+        </div>
+        <div class="w-12 h-1 bg-emerald-600"></div>
+        <div class="progress-step active w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-emerald-600">
+          2
+        </div>
+      </div>
+    </div>
+
     {% if mobile_from_auth %}
-    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-3 mb-4">
-      <p class="text-sm">📱 Mobile: {{ mobile_from_auth }}</p>
-      <p class="text-xs">Please complete your registration</p>
+    <div class="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-700 p-4 mb-6 rounded-lg flex items-center">
+      <i data-lucide="phone" class="w-5 h-5 mr-3"></i>
+      <div>
+        <p class="font-semibold">മൊബൈൽ നമ്പർ: +91 {{ mobile_from_auth }}</p>
+        <p class="text-sm">ദയവായി നിങ്ങളുടെ രജിസ്ട്രേഷൻ പൂർത്തീകരിക്കുക</p>
+      </div>
     </div>
     {% endif %}
+
+    <!-- Display Form Errors -->
+    {% if form.errors %}
+      <div class="mb-4 p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">
+        <div class="flex items-center">
+          <i data-lucide="alert-circle" class="w-5 h-5 mr-2"></i>
+          <p class="font-semibold">ദയവായി താഴെ കൊടുത്തിരിക്കുന്ന പിശകുകൾ തിരുത്തുക:</p>
+        </div>
+        <ul class="list-disc list-inside mt-2 ml-7">
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
     
-    <form method="post">
+    <form method="post" id="registrationForm">
       {% csrf_token %}
       
-      <div class="mb-4">
-        <label for="id_mobile" class="block text-gray-700 text-sm font-bold mb-2">Mobile Number:</label>
-        {{ form.mobile }}
-        {% if form.mobile.errors %}
-          <div class="text-red-500 text-sm mt-1">{{ form.mobile.errors }}</div>
-        {% endif %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Mobile Number Field -->
+        <div class="md:col-span-2">
+          <label for="id_mobile" class="block text-slate-700 text-sm font-bold mb-2">
+            <i data-lucide="phone" class="inline w-4 h-4 mr-1"></i>
+            മൊബൈൽ നമ്പർ
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              
+            </div>
+            {{ form.mobile }}
+            <div id="mobileValidIcon" class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none hidden">
+              <i data-lucide="check-circle" class="w-5 h-5 text-emerald-500"></i>
+            </div>
+          </div>
+          {% if form.mobile.errors %}
+            <div class="text-red-500 text-sm mt-1 flex items-center">
+              <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i>
+              {{ form.mobile.errors }}
+            </div>
+          {% endif %}
+          <p id="mobileCounter" class="text-slate-500 text-xs mt-1 text-right">0 / 10 അക്കങ്ങൾ</p>
+        </div>
+        
+        <!-- Name Field -->
+        <div class="md:col-span-2">
+          <label for="id_name" class="block text-slate-700 text-sm font-bold mb-2">
+            <i data-lucide="user" class="inline w-4 h-4 mr-1"></i>
+            പേര്
+            <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            {{ form.name }}
+            <div id="nameValidIcon" class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none hidden">
+              <i data-lucide="check-circle" class="w-5 h-5 text-emerald-500"></i>
+            </div>
+          </div>
+          {% if form.name.errors %}
+            <div class="text-red-500 text-sm mt-1">{{ form.name.errors }}</div>
+          {% endif %}
+        </div>
+        
+        <!-- Acreage Field -->
+        <div>
+          <label for="id_acreage" class="block text-slate-700 text-sm font-bold mb-2">
+            <i data-lucide="map-pin" class="inline w-4 h-4 mr-1"></i>
+            കൃഷിഭൂമി (ഏക്കർ)
+            <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            {{ form.acreage }}
+            <div class="absolute inset-y-0 right-0 pr-10 flex items-center pointer-events-none">
+              <span class="text-slate-500 text-sm">ഏക്കർ</span>
+            </div>
+          </div>
+          {% if form.acreage.errors %}
+            <div class="text-red-500 text-sm mt-1">{{ form.acreage.errors }}</div>
+          {% endif %}
+          <p class="text-slate-500 text-xs mt-1">നിങ്ങളുടെ മൊത്തം കൃഷിഭൂമിയുടെ വിസ്തീർണ്ണം</p>
+        </div>
+        
+        <!-- District Field -->
+        <div>
+          <label for="id_district" class="block text-slate-700 text-sm font-bold mb-2">
+            <i data-lucide="map" class="inline w-4 h-4 mr-1"></i>
+            ജില്ല
+            <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            {{ form.district }}
+            <div id="districtIcon" class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+              <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400"></i>
+            </div>
+          </div>
+          {% if form.district.errors %}
+            <div class="text-red-500 text-sm mt-1">{{ form.district.errors }}</div>
+          {% endif %}
+        </div>
+        
+        <!-- Pincode Field -->
+        <div>
+          <label for="id_pincode" class="block text-slate-700 text-sm font-bold mb-2">
+            <i data-lucide="navigation" class="inline w-4 h-4 mr-1"></i>
+            പിൻകോഡ്
+            <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            {{ form.pincode }}
+            <div id="pincodeValidIcon" class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none hidden">
+              <i data-lucide="check-circle" class="w-5 h-5 text-emerald-500"></i>
+            </div>
+            <div id="pincodeErrorIcon" class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none hidden">
+              <i data-lucide="alert-circle" class="w-5 h-5 text-red-500"></i>
+            </div>
+          </div>
+          {% if form.pincode.errors %}
+            <div class="text-red-500 text-sm mt-1">{{ form.pincode.errors }}</div>
+          {% endif %}
+          <p id="pincodeCounter" class="text-slate-500 text-xs mt-1 text-right">0 / 6 അക്കങ്ങൾ</p>
+        </div>
+        
+        <!-- Soil Type Field -->
+        <div>
+          <label for="id_soil_type" class="block text-slate-700 text-sm font-bold mb-2">
+            <i data-lucide="layers" class="inline w-4 h-4 mr-1"></i>
+            മണ്ണിന്റെ തരം
+            <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            {{ form.soil_type }}
+            <div id="soilIcon" class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+              <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400"></i>
+            </div>
+          </div>
+          {% if form.soil_type.errors %}
+            <div class="text-red-500 text-sm mt-1">{{ form.soil_type.errors }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Terms and Conditions -->
+      <div class="mt-6 p-4 bg-slate-50 rounded-lg">
+        <label class="flex items-start">
+          <input type="checkbox" id="terms" class="mt-1 mr-3" required>
+          <span class="text-sm text-slate-600">
+            ഞാൻ എല്ലാ <a href="#" class="text-emerald-600 hover:underline">നിബന്ധനകളും വ്യവസ്ഥകളും</a> സ്വീകരിക്കുന്നു, 
+            എന്റെ വിവരങ്ങൾ ശരിയാണെന്ന് സ്ഥിരീകരിക്കുന്നു
+          </span>
+        </label>
       </div>
       
-      <div class="mb-4">
-        <label for="id_name" class="block text-gray-700 text-sm font-bold mb-2">Name:</label>
-        {{ form.name }}
-        {% if form.name.errors %}
-          <div class="text-red-500 text-sm mt-1">{{ form.name.errors }}</div>
-        {% endif %}
-      </div>
-      
-      <div class="mb-4">
-        <label for="id_acreage" class="block text-gray-700 text-sm font-bold mb-2">Acreage:</label>
-        {{ form.acreage }}
-        {% if form.acreage.errors %}
-          <div class="text-red-500 text-sm mt-1">{{ form.acreage.errors }}</div>
-        {% endif %}
-      </div>
-      
-      <div class="mb-4">
-        <label for="id_district" class="block text-gray-700 text-sm font-bold mb-2">District:</label>
-        {{ form.district }}
-        {% if form.district.errors %}
-          <div class="text-red-500 text-sm mt-1">{{ form.district.errors }}</div>
-        {% endif %}
-      </div>
-      
-      <div class="mb-4">
-        <label for="id_pincode" class="block text-gray-700 text-sm font-bold mb-2">Pincode:</label>
-        {{ form.pincode }}
-        {% if form.pincode.errors %}
-          <div class="text-red-500 text-sm mt-1">{{ form.pincode.errors }}</div>
-        {% endif %}
-      </div>
-      
-      <div class="mb-6">
-        <label for="id_soil_type" class="block text-gray-700 text-sm font-bold mb-2">Soil Type:</label>
-        {{ form.soil_type }}
-        {% if form.soil_type.errors %}
-          <div class="text-red-500 text-sm mt-1">{{ form.soil_type.errors }}</div>
-        {% endif %}
-      </div>
-      
-      <button type="submit"
-        class="w-full bg-green-500 text-white rounded-lg py-3 mt-4 hover:bg-green-600 font-bold">
-        Register
+      <!-- Submit Button -->
+      <button type="submit" id="submitBtn"
+        class="w-full bg-emerald-600 text-white rounded-lg py-3.5 mt-6 hover:bg-emerald-700 font-bold text-lg transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300 flex items-center justify-center gap-2 disabled:bg-slate-400 disabled:cursor-not-allowed">
+        <span id="buttonText">രജിസ്റ്റർ ചെയ്യുക</span>
+        <div id="loadingSpinner" class="spinner hidden"></div>
+        <i data-lucide="arrow-right" id="arrowIcon" class="w-5 h-5"></i>
       </button>
     </form>
     
-    <div class="text-center mt-4">
-      <a href="{% url 'auth' %}" class="text-blue-500 hover:text-blue-700 text-sm">
-        ← Back to Login
+    <!-- Back to Login -->
+    <div class="text-center mt-6">
+      <a href="{% url 'auth' %}" class="text-emerald-600 hover:text-emerald-700 text-sm font-semibold inline-flex items-center gap-1 group">
+        <i data-lucide="arrow-left" class="w-4 h-4 transform group-hover:-translate-x-1 transition-transform"></i>
+        <span>ലോഗിൻ പേജിലേക്ക് മടങ്ങുക</span>
       </a>
+    </div>
+
+    <!-- Help Section -->
+    <div class="mt-8 pt-6 border-t border-slate-200">
+      <div class="flex justify-center items-center text-sm text-slate-500">
+        <i data-lucide="help-circle" class="w-4 h-4 mr-2"></i>
+        <span>സഹായം ആവശ്യമുണ്ടോ?</span>
+        <a href="#" class="ml-2 text-emerald-600 hover:underline">1800-XXX-XXXX</a>
+      </div>
     </div>
   </div>
 
-  <style>
-    body{
-      background: linear-gradient(135deg, #dfffe0 0%, #e8f5e8 100%);
-    }
-    /* Style form inputs */
-    input, select {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #d1d5db;
-      border-radius: 0.5rem;
-      background-color: white;
-    }
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
     
-    input:focus, select:focus {
-      outline: none;
-      border-color: #10b981;
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-    }
-  </style>
+    // Get form elements
+    const form = document.getElementById('registrationForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const buttonText = document.getElementById('buttonText');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const arrowIcon = document.getElementById('arrowIcon');
+    const termsCheckbox = document.getElementById('terms');
+    
+    // Apply styles to Django form fields
+    document.addEventListener('DOMContentLoaded', function() {
+      // Style all input fields
+      const inputs = document.querySelectorAll('input[type="text"], input[type="tel"], input[type="number"], input[type="email"]');
+      inputs.forEach(input => {
+        if (!input.classList.length) {
+          input.className = 'w-full bg-slate-50 border-2 border-slate-200 rounded-lg p-3.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200';
+        }
+      });
+
+      // Style select dropdowns
+      const selects = document.querySelectorAll('select');
+      selects.forEach(select => {
+        if (!select.classList.length) {
+          select.className = 'w-full bg-slate-50 border-2 border-slate-200 rounded-lg p-3.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200 appearance-none';
+        }
+      });
+
+      // Mobile field validation
+      const mobileInput = document.querySelector('input[name="mobile"]');
+      const mobileValidIcon = document.getElementById('mobileValidIcon');
+      const mobileCounter = document.getElementById('mobileCounter');
+      
+      if (mobileInput) {
+        mobileInput.className = 'w-full bg-slate-50 border-2 border-slate-200 rounded-lg p-3.5 pl-14 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200';
+        mobileInput.setAttribute('maxlength', '10');
+        mobileInput.setAttribute('placeholder', '98765 43210');
+        mobileInput.setAttribute('inputmode', 'numeric');
+        
+        mobileInput.addEventListener('input', function(e) {
+          this.value = this.value.replace(/[^0-9]/g, '');
+          const length = this.value.length;
+          mobileCounter.textContent = ${length} / 10 അക്കങ്ങൾ;
+          
+          if (length === 10) {
+            mobileInput.classList.remove('border-red-500');
+            mobileInput.classList.add('border-emerald-500');
+            mobileValidIcon.classList.remove('hidden');
+            mobileCounter.classList.add('text-emerald-500');
+            mobileCounter.classList.remove('text-red-500');
+          } else if (length > 0) {
+            mobileInput.classList.add('border-red-500');
+            mobileInput.classList.remove('border-emerald-500');
+            mobileValidIcon.classList.add('hidden');
+            mobileCounter.classList.add('text-red-500');
+            mobileCounter.classList.remove('text-emerald-500');
+          } else {
+            mobileInput.classList.remove('border-red-500', 'border-emerald-500');
+            mobileValidIcon.classList.add('hidden');
+            mobileCounter.classList.remove('text-red-500', 'text-emerald-500');
+          }
+          lucide.createIcons();
+        });
+      }
+
+      // Name field validation
+      const nameInput = document.querySelector('input[name="name"]');
+      const nameValidIcon = document.getElementById('nameValidIcon');
+      
+      if (nameInput) {
+        nameInput.setAttribute('placeholder', 'നിങ്ങളുടെ പൂർണ്ണ പേര്');
+        nameInput.addEventListener('input', function(e) {
+          if (this.value.length > 2) {
+            nameValidIcon.classList.remove('hidden');
+          } else {
+            nameValidIcon.classList.add('hidden');
+          }
+          lucide.createIcons();
+        });
+      }
+
+      // Pincode validation
+      const pincodeInput = document.querySelector('input[name="pincode"]');
+      const pincodeValidIcon = document.getElementById('pincodeValidIcon');
+      const pincodeErrorIcon = document.getElementById('pincodeErrorIcon');
+      const pincodeCounter = document.getElementById('pincodeCounter');
+      
+      if (pincodeInput) {
+        pincodeInput.setAttribute('maxlength', '6');
+        pincodeInput.setAttribute('placeholder', '695001');
+        pincodeInput.setAttribute('inputmode', 'numeric');
+        
+        pincodeInput.addEventListener('input', function(e) {
+          this.value = this.value.replace(/[^0-9]/g, '');
+          const length = this.value.length;
+          pincodeCounter.textContent = ${length} / 6 അക്കങ്ങൾ;
+          
+          if (length === 6) {
+            pincodeInput.classList.remove('border-red-500');
+            pincodeInput.classList.add('border-emerald-500');
+            pincodeValidIcon.classList.remove('hidden');
+            pincodeErrorIcon.classList.add('hidden');
+            pincodeCounter.classList.add('text-emerald-500');
+            pincodeCounter.classList.remove('text-red-500');
+          } else if (length > 0) {
+            pincodeInput.classList.add('border-red-500');
+            pincodeInput.classList.remove('border-emerald-500');
+            pincodeValidIcon.classList.add('hidden');
+            pincodeErrorIcon.classList.remove('hidden');
+            pincodeCounter.classList.add('text-red-500');
+            pincodeCounter.classList.remove('text-emerald-500');
+          } else {
+            pincodeInput.classList.remove('border-red-500', 'border-emerald-500');
+            pincodeValidIcon.classList.add('hidden');
+            pincodeErrorIcon.classList.add('hidden');
+            pincodeCounter.classList.remove('text-red-500', 'text-emerald-500');
+          }
+          lucide.createIcons();
+        });
+      }
+
+      // Acreage field
+      const acreageInput = document.querySelector('input[name="acreage"]');
+      if (acreageInput) {
+        acreageInput.setAttribute('placeholder', '2.5');
+        acreageInput.setAttribute('step', '0.1');
+        acreageInput.setAttribute('min', '0');
+        acreageInput.addEventListener('input', function(e) {
+          // Allow only numbers and decimal point
+          this.value = this.value.replace(/[^0-9.]/g, '');
+          // Ensure only one decimal point
+          const parts = this.value.split('.');
+          if (parts.length > 2) {
+            this.value = parts[0] + '.' + parts.slice(1).join('');
+          }
+        });
+      }
+    // Enable/disable submit button based on terms acceptance
+    termsCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('disabled:bg-slate-400', 'disabled:cursor-not-allowed');
+      } else {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('disabled:bg-slate-400', 'disabled:cursor-not-allowed');
+      }
+    });
+
+    // Form submission handling
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // Basic validation
+      const mobileInput = document.querySelector('input[name="mobile"]');
+      const pincodeInput = document.querySelector('input[name="pincode"]');
+      
+      if (mobileInput && mobileInput.value.length !== 10) {
+        alert('ദയവായി ശരിയായ 10 അക്ക മൊബൈൽ നമ്പർ നൽകുക');
+        mobileInput.focus();
+        return;
+      }
+      
+      if (pincodeInput && pincodeInput.value.length !== 6) {
+        alert('ദയവായി ശരിയായ 6 അക്ക പിൻകോഡ് നൽകുക');
+        pincodeInput.focus();
+        return;
+      }
+      
+      if (!termsCheckbox.checked) {
+        alert('ദയവായി നിബന്ധനകളും വ്യവസ്ഥകളും സ്വീകരിക്കുക');
+        return;
+      }
+      
+      // Show loading state
+      buttonText.textContent = 'രജിസ്റ്റർ ചെയ്യുന്നു...';
+      loadingSpinner.classList.remove('hidden');
+      arrowIcon.classList.add('hidden');
+      submitBtn.disabled = true;
+      
+      // Submit the form
+      this.submit();
+    });
+
+    // Auto-focus first empty field
+    window.addEventListener('load', function() {
+      const firstEmptyInput = document.querySelector('input:not([value]):not([type="checkbox"])');
+      if (firstEmptyInput) {
+        firstEmptyInput.focus();
+      }
+    });
+  </script>
 </body>
 </html>

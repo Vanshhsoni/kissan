@@ -54,7 +54,7 @@
                 
                 <div class="mt-2 text-xs font-medium py-1 px-3 rounded-full inline-block self-center {% if crop.is_harvested %}bg-blue-100 text-blue-800{% elif crop.is_sown %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
                     {% if crop.is_harvested %}
-                        Harvested
+                        Harvested : {{ crop.harvested_date |date:"M d, Y" }}
                     {% elif crop.is_sown %}
                         Active
                     {% else %}
@@ -323,7 +323,7 @@
     // Weather API configuration
     const WEATHER_CONFIG = {
         apiKey: '6ae92148e3msh0ad494c552b025ep1fc530jsn2ed71289dd79',
-       // 
+       // dc819804a1msh9e7bb9815e6daa0p197e3cjsna5c65c079a07
         apiHost: 'open-weather13.p.rapidapi.com',
         baseUrl: 'https://open-weather13.p.rapidapi.com/fivedaysforcast'
     };

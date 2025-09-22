@@ -45,22 +45,22 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_superuser", True)
         return self.create_user(mobile, **extra_fields)
 
-
 class User(AbstractBaseUser, PermissionsMixin):
     mobile = models.CharField(max_length=15, unique=True, primary_key=True)
-    name = models.CharField(max_length=100, blank=True, null=True)
-    acreage = models.CharField(max_length=10, choices=ACREAGE_CHOICES, null=True, blank=True)
-    district = models.CharField(max_length=50, choices=DISTRICTS, null=True, blank=True)
-    pincode = models.CharField(max_length=6, null=True, blank=True)
-    soil_type = models.CharField(max_length=50, choices=SOIL_TYPES, null=True, blank=True)
+    name = models.CharField(max_length=100)  # required
+    acreage = models.CharField(max_length=10, choices=ACREAGE_CHOICES)  # required
+    district = models.CharField(max_length=50, choices=DISTRICTS)  # required
+    pincode = models.CharField(max_length=6)  # required
+    soil_type = models.CharField(max_length=50, choices=SOIL_TYPES)  # required
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
     USERNAME_FIELD = "mobile"
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ["name", "acreage", "district", "pincode", "soil_type"]
 
     objects = UserManager()
 
     def __str__(self):
         return self.name or self.mobile
+

@@ -28,7 +28,7 @@
       <div class="mb-4 p-3 bg-gray-50 rounded-lg">
         <p class="text-sm font-semibold text-gray-700 flex items-center gap-2">
           <i data-lucide="building-2" class="w-4 h-4"></i>
-          विभाग / Department:
+          Department:
         </p>
         <p class="text-sm text-gray-600 mt-1">{{ scheme.department }}</p>
       </div>
@@ -38,11 +38,11 @@
         <details class="group">
           <summary class="cursor-pointer text-sm font-semibold text-gray-700 hover:text-green-600 transition-colors flex items-center">
             <i data-lucide="check-circle" class="w-4 h-4 mr-2"></i>
-            पात्रता / Eligibility & Key Points
+            Eligibility & Key Points
             <i data-lucide="chevron-right" class="w-4 h-4 ml-2 transform group-open:rotate-90 transition-transform"></i>
           </summary>
           <div class="mt-3 p-3 bg-blue-50 rounded-lg">
-            <p class="text-sm leading-relaxed text-gray-700">{{ scheme.eligibility|default:"जानकारी उपलब्ध नहीं है / Information not available" }}</p>
+            <p class="text-sm leading-relaxed text-gray-700">{{ scheme.eligibility|default:"Information not available" }}</p>
           </div>
         </details>
       </div>
@@ -52,11 +52,11 @@
         <details class="group">
           <summary class="cursor-pointer text-sm font-semibold text-gray-700 hover:text-green-600 transition-colors flex items-center">
             <i data-lucide="gift" class="w-4 h-4 mr-2"></i>
-            लाभ / Benefits
+            Benefits
             <i data-lucide="chevron-right" class="w-4 h-4 ml-2 transform group-open:rotate-90 transition-transform"></i>
           </summary>
           <div class="mt-3 p-3 bg-green-50 rounded-lg">
-            <p class="text-sm leading-relaxed text-gray-700">{{ scheme.benefits|default:"जानकारी उपलब्ध नहीं है / Information not available" }}</p>
+            <p class="text-sm leading-relaxed text-gray-700">{{ scheme.benefits|default:"Information not available" }}</p>
           </div>
         </details>
       </div>
@@ -75,7 +75,6 @@
         <div class="max-w-md mx-auto">
           <i data-lucide="clipboard" class="w-16 h-16 mx-auto mb-4 text-gray-400"></i>
           <h3 class="text-xl font-semibold text-gray-700 mb-2">No Schemes Found</h3>
-          <p class="text-gray-500">कोई योजना नहीं मिली। CSV file को जांचें।</p>
           <p class="text-sm text-gray-400 mt-2">Make sure CSV exists at <code>data/kerala_schemes.csv</code></p>
         </div>
       </div>
@@ -116,7 +115,7 @@
   // Function to open links securely with HTTPS
   function openSecureLink(url) {
     if (!url || url.trim() === '' || url === 'N/A' || url === 'n/a') {
-      alert('लिंक उपलब्ध नहीं है / Link not available');
+      alert('Link not available');
       return;
     }
     
@@ -125,7 +124,7 @@
     
     // Remove any contentReference patterns or similar
     if (cleanUrl.includes('contentReference') || cleanUrl.includes('oaicite')) {
-      alert('लिंक उपलब्ध नहीं है / Link not available');
+      alert(' Link not available');
       return;
     }
     
@@ -140,11 +139,11 @@
       
       // Fallback if popup blocked
       if (!newWindow) {
-        alert('पॉपअप ब्लॉक हो गया। कृपया manually link खोलें / Popup blocked. Please open link manually: ' + cleanUrl);
+        alert('Popup blocked. Please open link manually: ' + cleanUrl);
       }
     } catch (error) {
       console.error('Error opening link:', error);
-      alert('लिंक खोलने में समस्या हुई / Error opening link');
+      alert('Error opening link');
     }
   }
 
