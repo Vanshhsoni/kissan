@@ -496,570 +496,578 @@
             <!-- History items will be populated here -->
         </div>
     </div>
+
 </div>
 
-        <script>
-    
-(function() {
-    'use strict';
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
+    <script>    
+    (function() {
+        'use strict';
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
                 }
             }
+            return cookieValue;
         }
-        return cookieValue;
-    }
 
-    function saveChatToServer(question, response) {
-        const csrftoken = getCookie('csrftoken');
-        const data = {
-            question: question,
-            response: response,
-            language: currentLanguage, // Now has access to this variable
-            session_id: currentChatId,   // And this one
+        function saveChatToServer(question, response) {
+            const csrftoken = getCookie('csrftoken');
+            const data = {
+                question: question,
+                response: response,
+                language: currentLanguage,
+                session_id: currentChatId,
+            };
+
+            fetch('/ai/save_chat/', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                 if (!response.ok) {
+                    console.error('Server responded with an error:', response.status);
+                 }
+                 return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('Chat saved successfully:', data);
+                } else {
+                    console.error('Failed to save chat:', data.error);
+                }
+            })
+            .catch((error) => {
+                console.error('Error during fetch:', error);
+            });
+        }
+        
+        // Gemini API Configuration
+        const GEMINI_API_KEY = 'AIzaSyAQvFoEofmA7kV4x12RdCx4BCPQCil1jR0';
+        const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
+        // User profile data from Django context
+        const userProfile = {
+            name: "{{ user.name|default:'Farmer' }}",
+            district: "{{ user.district|default:'Kerala' }}",
+            acreage: "{{ user.acreage|default:'Small scale' }}",
+            soil_type: "{{ user.soil_type|default:'Mixed' }}",
+            pincode: "{{ user.pincode|default:'' }}",
+            crops: [
+                {% for crop in user_crops %}
+                {
+                    name: "{{ crop.name }}",
+                    english_name: "{{ crop.english_name|default:'' }}",
+                    is_sown: {{ crop.is_sown|yesno:"true,false" }},
+                    is_harvested: {{ crop.is_harvested|yesno:"true,false" }},
+                    sown_date: "{{ crop.sown_date|default:'' }}",
+                    fertilizer: "{{ crop.fertilizer|default:'' }}",
+                    pesticide: "{{ crop.pesticide|default:'' }}"
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            recent_activities: [
+                {% for log in recent_activities %}
+                {
+                    crop: "{{ log.crop.name }}",
+                    date: "{{ log.date }}",
+                    irrigated: {{ log.did_irrigate|yesno:"true,false" }},
+                    fertilized: {{ log.did_fertilize|yesno:"true,false" }},
+                    pesticide: {{ log.did_apply_pesticide|yesno:"true,false" }},
+                    notes: "{{ log.notes|default:'' }}"
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ]
         };
 
-        fetch('/ai/save_chat/', { 
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrftoken
+        // Element References
+        let messageInput, sendButton, chatMessages, typingIndicator, welcomeMessage, statusText, micButton, recordingStatus, historyModal;
+
+        // State Management
+        let currentLanguage = 'ml';
+        let isTyping = false;
+        let isListening = false;
+        let chatHistory = [];
+        let savedChats = [];
+        let currentChatId = null;
+
+        // Language configurations
+        const languages = {
+            ml: {
+                code: 'ml-IN',
+                welcomeTitle: 'കിസാൻ AI-ലേക്ക് സ്വാഗതം!',
+                welcomeText: 'കൃഷി, വിള പരിപാലനം, കാലാവസ്ഥ, മികച്ച കാർഷിക രീതികൾ എന്നിവയിൽ നിങ്ങളുടെ പ്രൊഫൈലും പ്രവർത്തനങ്ങളും അടിസ്ഥാനമാക്കി സഹായിക്കാൻ ഞാൻ ഇവിടെയുണ്ട്.',
+                placeholder: 'കൃഷിയെക്കുറിച്ച് എന്തും ചോദിക്കാം...',
+                listeningPlaceholder: 'കേൾക്കുന്നു...',
+                statusReady: 'ചോദിക്കാൻ തയ്യാറാണ്',
+                statusThinking: 'AI ചിന്തിക്കുന്നു...',
+                suggestions: [
+                    'ഈ സീസണിൽ എന്ത് കൃഷി ചെയ്യണം?',
+                    'മണ്ണിന്റെ ആരോഗ്യം എങ്ങനെ മെച്ചപ്പെടുത്താം?',
+                    'കൃഷിക്കുള്ള കാലാവസ്ഥാ പ്രവചനം',
+                    'കീടനിയന്ത്രണ മാർഗ്ഗങ്ങൾ',
+                    'എന്റെ വിളകളുടെ അവസ്ഥ പറയൂ'
+                ],
+                systemPrompt: 'You are Kissan AI, a helpful farming assistant for Kerala farmers. Respond ONLY in Malayalam. Provide practical advice based on the user profile, crops, and recent activities. Be encouraging and use local farming knowledge.'
             },
-            body: JSON.stringify(data)
-        })
-        .then(response => {
-             if (!response.ok) { // Check for server errors
-                console.error('Server responded with an error:', response.status);
-             }
-             return response.json();
-        })
-        .then(data => {
-            if (data.status === 'success') {
-                console.log('Chat saved successfully:', data);
-            } else {
-                console.error('Failed to save chat:', data.error);
+            en: {
+                code: 'en-IN',
+                welcomeTitle: 'Welcome to Kissan AI!',
+                welcomeText: 'I am here to help you with farming, crop care, weather, and best agricultural practices based on your profile and activities.',
+                placeholder: 'Ask me anything about farming...',
+                listeningPlaceholder: 'Listening...',
+                statusReady: 'Ready to help',
+                statusThinking: 'AI is thinking...',
+                suggestions: [
+                    'What crops should I grow this season?',
+                    'How to improve soil health?',
+                    'Weather forecast for farming',
+                    'Pest control methods',
+                    'Tell me about my crop status'
+                ],
+                systemPrompt: 'You are Kissan AI, a helpful farming assistant for Kerala farmers. Respond ONLY in English. Provide practical advice based on the user profile, crops, and recent activities. Be encouraging and use local farming knowledge.'
             }
-        })
-        .catch((error) => {
-            console.error('Error during fetch:', error);
-        });
-    }
-    
-    // Configuration
-    const API_KEY = '69f1b6d51dmsh310b72bcfbe5db1p1c6cc4jsn86f55a4d0577';
-    const API_URL = 'https://chatgpt-42.p.rapidapi.com/aitohuman';
-    const API_HOST = 'chatgpt-42.p.rapidapi.com';
+        };
 
-    // User profile data from Django context
-    const userProfile = {
-        name: "{{ user.name|default:'Farmer' }}",
-        district: "{{ user.district|default:'Kerala' }}",
-        acreage: "{{ user.acreage|default:'Small scale' }}",
-        soil_type: "{{ user.soil_type|default:'Mixed' }}",
-        pincode: "{{ user.pincode|default:'' }}",
-        crops: [
-            {% for crop in user_crops %}
-            {
-                name: "{{ crop.name }}",
-                english_name: "{{ crop.english_name|default:'' }}",
-                is_sown: {{ crop.is_sown|yesno:"true,false" }},
-                is_harvested: {{ crop.is_harvested|yesno:"true,false" }},
-                sown_date: "{{ crop.sown_date|default:'' }}",
-                fertilizer: "{{ crop.fertilizer|default:'' }}",
-                pesticide: "{{ crop.pesticide|default:'' }}"
-            }{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ],
-        recent_activities: [
-            {% for log in recent_activities %}
-            {
-                crop: "{{ log.crop.name }}",
-                date: "{{ log.date }}",
-                irrigated: {{ log.did_irrigate|yesno:"true,false" }},
-                fertilized: {{ log.did_fertilize|yesno:"true,false" }},
-                pesticide: {{ log.did_apply_pesticide|yesno:"true,false" }},
-                notes: "{{ log.notes|default:'' }}"
-            }{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ]
-    };
+        // Speech Recognition Setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
 
-    // Element References
-    let messageInput, sendButton, chatMessages, typingIndicator, welcomeMessage, statusText, micButton, recordingStatus, historyModal;
+        // Initialize DOM elements and setup
+        function initializePage() {
+            // Get DOM elements
+            messageInput = document.getElementById('messageInput');
+            sendButton = document.getElementById('sendButton');
+            chatMessages = document.getElementById('chatMessages');
+            typingIndicator = document.getElementById('typingIndicator');
+            welcomeMessage = document.getElementById('welcomeMessage');
+            statusText = document.getElementById('status');
+            micButton = document.getElementById('micButton');
+            recordingStatus = document.getElementById('recordingStatus');
+            historyModal = document.getElementById('historyModal');
 
-    // State Management
-    let currentLanguage = 'ml';
-    let isTyping = false;
-    let isListening = false;
-    let chatHistory = [];
-    let savedChats = [];
-    let currentChatId = null;
+            // Setup speech recognition
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                recognition.lang = languages[currentLanguage].code;
 
-    // Language configurations
-    const languages = {
-        ml: {
-            code: 'ml-IN',
-            welcomeTitle: 'കിസാൻ AI-ലേക്ക് സ്വാഗതം!',
-            welcomeText: 'കൃഷി, വിള പരിപാലനം, കാലാവസ്ഥ, മികച്ച കാർഷിക രീതികൾ എന്നിവയിൽ നിങ്ങളുടെ പ്രൊഫൈലും പ്രവർത്തനങ്ങളും അടിസ്ഥാനമാക്കി സഹായിക്കാൻ ഞാൻ ഇവിടെയുണ്ട്.',
-            placeholder: 'കൃഷിയെക്കുറിച്ച് എന്തും ചോദിക്കാം...',
-            listeningPlaceholder: 'കേൾക്കുന്നു...',
-            statusReady: 'ചോദിക്കാൻ തയ്യാറാണ്',
-            statusThinking: 'AI ചിന്തിക്കുന്നു...',
-            suggestions: [
-                'ഈ സീസണിൽ എന്ത് കൃഷി ചെയ്യണം?',
-                'മണ്ണിന്റെ ആരോഗ്യം എങ്ങനെ മെച്ചപ്പെടുത്താം?',
-                'കൃഷിക്കുള്ള കാലാവസ്ഥാ പ്രവചനം',
-                'കീടനിയന്ത്രണ മാർഗ്ഗങ്ങൾ',
-                'എന്റെ വിളകളുടെ അവസ്ഥ പറയൂ'
-            ],
-            systemPrompt: 'You are Kissan AI, a helpful farming assistant for Kerala farmers. Respond ONLY in Malayalam. Provide practical advice based on the user profile, crops, and recent activities. Be encouraging and use local farming knowledge.'
-        },
-        en: {
-            code: 'en-IN',
-            welcomeTitle: 'Welcome to Kissan AI!',
-            welcomeText: 'I am here to help you with farming, crop care, weather, and best agricultural practices based on your profile and activities.',
-            placeholder: 'Ask me anything about farming...',
-            listeningPlaceholder: 'Listening...',
-            statusReady: 'Ready to help',
-            statusThinking: 'AI is thinking...',
-            suggestions: [
-                'What crops should I grow this season?',
-                'How to improve soil health?',
-                'Weather forecast for farming',
-                'Pest control methods',
-                'Tell me about my crop status'
-            ],
-            systemPrompt: 'You are Kissan AI, a helpful farming assistant for Kerala farmers. Respond ONLY in English. Provide practical advice based on the user profile, crops, and recent activities. Be encouraging and use local farming knowledge.'
-        }
-    };
+                recognition.onstart = function() {
+                    isListening = true;
+                    micButton.classList.add('listening');
+                    recordingStatus.style.display = 'block';
+                    messageInput.placeholder = languages[currentLanguage].listeningPlaceholder;
+                };
 
-    // Speech Recognition Setup
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition;
+                recognition.onend = function() {
+                    isListening = false;
+                    micButton.classList.remove('listening');
+                    recordingStatus.style.display = 'none';
+                    messageInput.placeholder = languages[currentLanguage].placeholder;
+                };
 
-    // Initialize DOM elements and setup
-    function initializePage() {
-        // Get DOM elements
-        messageInput = document.getElementById('messageInput');
-        sendButton = document.getElementById('sendButton');
-        chatMessages = document.getElementById('chatMessages');
-        typingIndicator = document.getElementById('typingIndicator');
-        welcomeMessage = document.getElementById('welcomeMessage');
-        statusText = document.getElementById('status');
-        micButton = document.getElementById('micButton');
-        recordingStatus = document.getElementById('recordingStatus');
-        historyModal = document.getElementById('historyModal');
+                recognition.onerror = function(event) {
+                    console.error('Speech recognition error:', event.error);
+                    isListening = false;
+                    micButton.classList.remove('listening');
+                    recordingStatus.style.display = 'none';
+                };
 
-        // Setup speech recognition
-        if (SpeechRecognition) {
-            recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = true;
-            recognition.lang = languages[currentLanguage].code;
+                recognition.onresult = function(event) {
+                    let transcript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        transcript += event.results[i][0].transcript;
+                    }
+                    messageInput.value = transcript;
+                    sendButton.disabled = messageInput.value.trim() === '';
+                };
+            }
 
-            recognition.onstart = function() {
-                isListening = true;
-                micButton.classList.add('listening');
-                recordingStatus.style.display = 'block';
-                messageInput.placeholder = languages[currentLanguage].listeningPlaceholder;
-            };
+            // Event listeners
+            messageInput.addEventListener('input', function() {
+                sendButton.disabled = this.value.trim() === '';
+                adjustTextareaHeight(this);
+            });
 
-            recognition.onend = function() {
-                isListening = false;
-                micButton.classList.remove('listening');
-                recordingStatus.style.display = 'none';
-                messageInput.placeholder = languages[currentLanguage].placeholder;
-            };
-
-            recognition.onerror = function(event) {
-                console.error('Speech recognition error:', event.error);
-                isListening = false;
-                micButton.classList.remove('listening');
-                recordingStatus.style.display = 'none';
-            };
-
-            recognition.onresult = function(event) {
-                let transcript = '';
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i][0].transcript;
+            messageInput.addEventListener('keydown', handleKeyDown);
+            sendButton.addEventListener('click', sendMessage);
+            micButton.addEventListener('click', toggleVoiceInput);
+            
+            // Language toggle buttons
+            document.getElementById('malayalamBtn').addEventListener('click', function() {
+                toggleLanguage('ml');
+            });
+            document.getElementById('englishBtn').addEventListener('click', function() {
+                toggleLanguage('en');
+            });
+            
+            // Clear chat button
+            document.getElementById('clearChatBtn').addEventListener('click', clearChat);
+            
+            // History modal buttons
+            document.getElementById('historyBtn').addEventListener('click', openHistoryModal);
+            document.getElementById('closeModalBtn').addEventListener('click', closeHistoryModal);
+            
+            historyModal.addEventListener('click', function(event) {
+                if (event.target === historyModal) {
+                    closeHistoryModal();
                 }
-                messageInput.value = transcript;
-                sendButton.disabled = messageInput.value.trim() === '';
-            };
+            });
+
+            // Initialize app
+            initializeChat();
+            updateLanguageUI();
+            messageInput.focus();
+
+            // Initialize saved chats
+            savedChats = [];
         }
 
-        // Event listeners
-        messageInput.addEventListener('input', function() {
-            sendButton.disabled = this.value.trim() === '';
-            adjustTextareaHeight(this);
-        });
-
-        messageInput.addEventListener('keydown', handleKeyDown);
-        sendButton.addEventListener('click', sendMessage);
-        micButton.addEventListener('click', toggleVoiceInput);
-        
-        // Language toggle buttons
-        document.getElementById('malayalamBtn').addEventListener('click', function() {
-            toggleLanguage('ml');
-        });
-        document.getElementById('englishBtn').addEventListener('click', function() {
-            toggleLanguage('en');
-        });
-        
-        // Clear chat button
-        document.getElementById('clearChatBtn').addEventListener('click', clearChat);
-        
-        // History modal buttons
-        document.getElementById('historyBtn').addEventListener('click', openHistoryModal);
-        document.getElementById('closeModalBtn').addEventListener('click', closeHistoryModal);
-        
-        historyModal.addEventListener('click', function(event) {
-            if (event.target === historyModal) {
-                closeHistoryModal();
-            }
-        });
-
-        // Initialize app
-        initializeChat();
-        updateLanguageUI();
-        messageInput.focus();
-
-        // Initialize saved chats
-        savedChats = [];
-    }
-
-    function initializeChat() {
-        const profileInfo = 'User Profile:\nName: ' + userProfile.name + '\nDistrict: ' + userProfile.district + '\nFarm Size: ' + userProfile.acreage + '\nSoil Type: ' + userProfile.soil_type + '\nPincode: ' + userProfile.pincode + '\n\nCurrent Crops: ' + userProfile.crops.map(function(crop) {
-            return crop.name + ' (' + crop.english_name + ') - Status: ' + (crop.is_sown ? 'Sown' : 'Not sown') + ', ' + (crop.is_harvested ? 'Harvested' : 'Growing');
-        }).join(', ') + '\n\nRecent Activities: ' + userProfile.recent_activities.slice(0, 5).map(function(activity) {
-            return activity.date + ': ' + activity.crop + ' - Irrigated: ' + activity.irrigated + ', Fertilized: ' + activity.fertilized + ', Pesticide: ' + activity.pesticide;
-        }).join('; ');
-
-        chatHistory = [{
-            role: 'system',
-            content: languages[currentLanguage].systemPrompt + '\n\n' + profileInfo
-        }];
-        
-        generateNewChatId();
-    }
-
-    function generateNewChatId() {
-        currentChatId = Date.now().toString();
-    }
-
-    function toggleLanguage(lang) {
-        if (lang === currentLanguage) return;
-        
-        currentLanguage = lang;
-        updateLanguageUI();
-        
-        if (recognition) {
-            recognition.lang = languages[currentLanguage].code;
-        }
-        
-        clearChat();
-    }
-
-    function updateLanguageUI() {
-        // Update active language button
-        document.querySelectorAll('.lang-btn').forEach(function(btn) {
-            btn.classList.toggle('active', btn.dataset.lang === currentLanguage);
-        });
-        
-        // Update UI text
-        const lang = languages[currentLanguage];
-        document.getElementById('welcomeTitle').textContent = lang.welcomeTitle;
-        document.getElementById('welcomeText').textContent = lang.welcomeText;
-        messageInput.placeholder = lang.placeholder;
-        statusText.textContent = lang.statusReady;
-        
-        // Update suggestions
-        const suggestionsContainer = document.getElementById('quickSuggestions');
-        suggestionsContainer.innerHTML = '';
-        lang.suggestions.forEach(function(suggestion) {
-            const chip = document.createElement('div');
-            chip.className = 'suggestion-chip';
-            chip.textContent = suggestion;
-            chip.onclick = function() {
-                sendSuggestion(suggestion);
-            };
-            suggestionsContainer.appendChild(chip);
-        });
-    }
-
-    function toggleVoiceInput() {
-        if (!recognition) {
-            alert('Speech recognition is not supported in your browser.');
-            return;
-        }
-        
-        if (isListening) {
-            recognition.stop();
-        } else {
-            recognition.start();
-        }
-    }
-
-    function adjustTextareaHeight(textarea) {
-        textarea.style.height = 'auto';
-        textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-    }
-
-    function handleKeyDown(event) {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            if (!sendButton.disabled) {
-                sendMessage();
-            }
-        }
-    }
-
-    function sendSuggestion(text) {
-        messageInput.value = text;
-        sendButton.disabled = false;
-        sendMessage();
-    }
-
-    function sendMessage() {
-        const message = messageInput.value.trim();
-        if (!message || isTyping) return;
-
-        if (welcomeMessage.style.display !== 'none') {
-            welcomeMessage.style.display = 'none';
-        }
-
-        addMessage(message, 'user');
-        
-        messageInput.value = '';
-        adjustTextareaHeight(messageInput);
-        sendButton.disabled = true;
-        showTypingIndicator();
-
-        callChatAPI(message).then(function(responseText) {
-            addMessage(responseText, 'bot');
-            saveChatToHistory(message, responseText);
-        }).catch(function(error) {
-            console.error('API Error:', error);
-            const errorMessage = currentLanguage === 'ml' 
-                ? 'ക്ഷമിക്കണം, ഒരു പിശക് സംഭവിച്ചു. ദയവായി വീണ്ടും ശ്രമിക്കുക.'
-                : 'Sorry, an error occurred. Please try again.';
-            addMessage(errorMessage, 'bot');
-        }).finally(function() {
-            hideTypingIndicator();
-        });
-    }
-
-    function callChatAPI(userMessage) {
-        return new Promise(function(resolve, reject) {
-            const systemContext = languages[currentLanguage].systemPrompt;
-            const profileContext = 'User Profile:\nName: ' + userProfile.name + '\nDistrict: ' + userProfile.district + '\nFarm Size: ' + userProfile.acreage + '\nSoil Type: ' + userProfile.soil_type + '\nPincode: ' + userProfile.pincode + '\n\nCurrent Crops: ' + userProfile.crops.map(function(crop) {
+        function initializeChat() {
+            const profileInfo = 'User Profile:\nName: ' + userProfile.name + '\nDistrict: ' + userProfile.district + '\nFarm Size: ' + userProfile.acreage + '\nSoil Type: ' + userProfile.soil_type + '\nPincode: ' + userProfile.pincode + '\n\nCurrent Crops: ' + userProfile.crops.map(function(crop) {
                 return crop.name + ' (' + crop.english_name + ') - Status: ' + (crop.is_sown ? 'Sown' : 'Not sown') + ', ' + (crop.is_harvested ? 'Harvested' : 'Growing');
             }).join(', ') + '\n\nRecent Activities: ' + userProfile.recent_activities.slice(0, 5).map(function(activity) {
                 return activity.date + ': ' + activity.crop + ' - Irrigated: ' + activity.irrigated + ', Fertilized: ' + activity.fertilized + ', Pesticide: ' + activity.pesticide;
             }).join('; ');
 
-            const fullPrompt = systemContext + '\n\n' + profileContext + '\n\nUser Question: ' + userMessage + '\n\nPlease provide a helpful response in ' + (currentLanguage === 'ml' ? 'Malayalam' : 'English') + ' language only.';
+            chatHistory = [{
+                role: 'system',
+                content: languages[currentLanguage].systemPrompt + '\n\n' + profileInfo
+            }];
             
-            const data = JSON.stringify({
-                text: fullPrompt
-            });
+            generateNewChatId();
+        }
 
-            fetch(API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-rapidapi-key': API_KEY,
-                    'x-rapidapi-host': API_HOST
-                },
-                body: data
-            }).then(function(response) {
+        function generateNewChatId() {
+            currentChatId = Date.now().toString();
+        }
+
+        function toggleLanguage(lang) {
+            if (lang === currentLanguage) return;
+            
+            currentLanguage = lang;
+            updateLanguageUI();
+            
+            if (recognition) {
+                recognition.lang = languages[currentLanguage].code;
+            }
+            
+            clearChat();
+        }
+
+        function updateLanguageUI() {
+            // Update active language button
+            document.querySelectorAll('.lang-btn').forEach(function(btn) {
+                btn.classList.toggle('active', btn.dataset.lang === currentLanguage);
+            });
+            
+            // Update UI text
+            const lang = languages[currentLanguage];
+            document.getElementById('welcomeTitle').textContent = lang.welcomeTitle;
+            document.getElementById('welcomeText').textContent = lang.welcomeText;
+            messageInput.placeholder = lang.placeholder;
+            statusText.textContent = lang.statusReady;
+            
+            // Update suggestions
+            const suggestionsContainer = document.getElementById('quickSuggestions');
+            suggestionsContainer.innerHTML = '';
+            lang.suggestions.forEach(function(suggestion) {
+                const chip = document.createElement('div');
+                chip.className = 'suggestion-chip';
+                chip.textContent = suggestion;
+                chip.onclick = function() {
+                    sendSuggestion(suggestion);
+                };
+                suggestionsContainer.appendChild(chip);
+            });
+        }
+
+        function toggleVoiceInput() {
+            if (!recognition) {
+                alert('Speech recognition is not supported in your browser.');
+                return;
+            }
+            
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        function adjustTextareaHeight(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                if (!sendButton.disabled) {
+                    sendMessage();
+                }
+            }
+        }
+
+        function sendSuggestion(text) {
+            messageInput.value = text;
+            sendButton.disabled = false;
+            sendMessage();
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isTyping) return;
+
+            if (welcomeMessage.style.display !== 'none') {
+                welcomeMessage.style.display = 'none';
+            }
+
+            addMessage(message, 'user');
+            
+            messageInput.value = '';
+            adjustTextareaHeight(messageInput);
+            sendButton.disabled = true;
+            showTypingIndicator();
+
+            callGeminiAPI(message).then(function(responseText) {
+                addMessage(responseText, 'bot');
+                saveChatToHistory(message, responseText);
+                saveChatToServer(message, responseText);
+            }).catch(function(error) {
+                console.error('API Error:', error);
+                const errorMessage = currentLanguage === 'ml' 
+                    ? 'ക്ഷമിക്കണം, ഒരു പിശക് സംഭവിച്ചു. ദയവായി വീണ്ടും ശ്രമിക്കുക.'
+                    : 'Sorry, an error occurred. Please try again.';
+                addMessage(errorMessage, 'bot');
+            }).finally(function() {
+                hideTypingIndicator();
+            });
+        }
+
+        // NEW: Gemini API call function
+        async function callGeminiAPI(userMessage) {
+            try {
+                const systemContext = languages[currentLanguage].systemPrompt;
+                const profileContext = 'User Profile:\nName: ' + userProfile.name + '\nDistrict: ' + userProfile.district + '\nFarm Size: ' + userProfile.acreage + '\nSoil Type: ' + userProfile.soil_type + '\nPincode: ' + userProfile.pincode + '\n\nCurrent Crops: ' + userProfile.crops.map(function(crop) {
+                    return crop.name + ' (' + crop.english_name + ') - Status: ' + (crop.is_sown ? 'Sown' : 'Not sown') + ', ' + (crop.is_harvested ? 'Harvested' : 'Growing');
+                }).join(', ') + '\n\nRecent Activities: ' + userProfile.recent_activities.slice(0, 5).map(function(activity) {
+                    return activity.date + ': ' + activity.crop + ' - Irrigated: ' + activity.irrigated + ', Fertilized: ' + activity.fertilized + ', Pesticide: ' + activity.pesticide;
+                }).join('; ');
+
+                const fullPrompt = systemContext + '\n\n' + profileContext + '\n\nUser Question: ' + userMessage + '\n\nPlease provide a helpful response in ' + (currentLanguage === 'ml' ? 'Malayalam' : 'English') + ' language only.';
+
+                const response = await fetch(GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-goog-api-key': GEMINI_API_KEY
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: fullPrompt
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            topK: 40,
+                            topP: 0.95,
+                            maxOutputTokens: 1024,
+                        }
+                    })
+                });
+
                 if (!response.ok) {
                     throw new Error('HTTP error! status: ' + response.status);
                 }
-                return response.json();
-            }).then(function(responseData) {
-                if (responseData && responseData.result && Array.isArray(responseData.result)) {
-                    resolve(responseData.result[0].trim());
-                } else if (responseData && responseData.result) {
-                    resolve(responseData.result.trim());
+
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
+                    return data.candidates[0].content.parts[0].text.trim();
                 } else {
-                    throw new Error('Invalid response format from the API.');
+                    throw new Error('Invalid response format from Gemini API');
                 }
-            }).catch(function(error) {
-                reject(error);
-            });
-        });
-    }
-
-    function addMessage(text, sender) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message ' + sender;
-        
-        const bubbleDiv = document.createElement('div');
-        bubbleDiv.className = 'message-bubble';
-        bubbleDiv.textContent = text;
-        
-        messageDiv.appendChild(bubbleDiv);
-        chatMessages.appendChild(messageDiv);
-        scrollToBottom();
-    }
-
-    function showTypingIndicator() {
-        isTyping = true;
-        statusText.textContent = languages[currentLanguage].statusThinking;
-        typingIndicator.style.display = 'flex';
-        chatMessages.appendChild(typingIndicator);
-        scrollToBottom();
-    }
-
-    function hideTypingIndicator() {
-        isTyping = false;
-        statusText.textContent = languages[currentLanguage].statusReady;
-        typingIndicator.style.display = 'none';
-        if (typingIndicator.parentNode) {
-            typingIndicator.parentNode.removeChild(typingIndicator);
-        }
-    }
-
-    function clearChat() {
-        // Remove all message elements
-        const messages = chatMessages.querySelectorAll('.message');
-        messages.forEach(function(msg) {
-            msg.remove();
-        });
-        
-        // Show welcome message again
-        welcomeMessage.style.display = 'block';
-        updateLanguageUI();
-        
-        // Reset chat history
-        initializeChat();
-        
-        statusText.textContent = languages[currentLanguage].statusReady;
-        messageInput.focus();
-    }
-
-    function scrollToBottom() {
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    function saveChatToHistory(question, response) {
-        const chatPreview = question.substring(0, 50) + (question.length > 50 ? '...' : '');
-
-        const existingChatIndex = savedChats.findIndex(function(chat) {
-            return chat.id === currentChatId;
-        });
-        
-        const chatData = {
-            id: currentChatId,
-            date: new Date().toLocaleString(),
-            language: currentLanguage,
-            preview: chatPreview,
-            messages: [
-                { role: 'user', content: question },
-                { role: 'assistant', content: response }
-            ]
-        };
-
-        if (existingChatIndex >= 0) {
-            // Update existing chat by appending new messages
-            savedChats[existingChatIndex].messages.push({ role: 'user', content: question });
-            savedChats[existingChatIndex].messages.push({ role: 'assistant', content: response });
-            savedChats[existingChatIndex].preview = chatPreview;
-        } else {
-            savedChats.unshift(chatData);
+            } catch (error) {
+                console.error('Gemini API Error:', error);
+                throw error;
+            }
         }
 
-        // Keep only last 20 chats
-        savedChats = savedChats.slice(0, 20);
-    }
-
-    function openHistoryModal() {
-        const historyList = document.getElementById('historyList');
-        historyList.innerHTML = '<p style="text-align: center; color: #718096;">Loading history...</p>';
-        historyModal.style.display = 'block';
-    
-        fetch('/ai/history/')
-            .then(response => response.json())
-            .then(data => {
-                historyList.innerHTML = ''; // Clear "Loading..." message
-                if (data.history && data.history.length > 0) {
-                    data.history.forEach(function(chat) {
-                        const historyItem = document.createElement('div');
-                        historyItem.className = 'history-item';
-                        
-                        // Call a new function to load the specific chat on click
-                        historyItem.onclick = function() {
-                            loadChatHistoryFromServer(chat.id);
-                        };
-                        
-                        const langText = chat.language === 'ml' ? 'മലയാളം' : 'English';
-                        historyItem.innerHTML = `<div class="history-date">${chat.date} • ${langText}</div><div class="history-preview">${chat.preview}</div>`;
-                        
-                        historyList.appendChild(historyItem);
-                    });
-                } else {
-                    historyList.innerHTML = '<p style="text-align: center; color: #718096;">No chat history found</p>';
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching chat history:', error);
-                historyList.innerHTML = '<p style="text-align: center; color: #d32f2f;">Could not load history.</p>';
-            });
-    }    
-
-    function closeHistoryModal() {
-        historyModal.style.display = 'none';
-    }
-
-    // REPLACE your old loadChatHistory function with this new one
-function loadChatHistoryFromServer(sessionId) {
-    fetch(`/ai/history/${sessionId}/`)
-        .then(response => response.json())
-        .then(data => {
-            // Clear current chat messages
-            chatMessages.innerHTML = '';
-            welcomeMessage.style.display = 'none';
-
-            // Load chat data
-            currentChatId = data.id;
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + sender;
             
-            // Set language and update UI elements like buttons and placeholders
-            if (currentLanguage !== data.language) {
-                currentLanguage = data.language;
-                updateLanguageUI();
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = 'message-bubble';
+            bubbleDiv.textContent = text;
+            
+            messageDiv.appendChild(bubbleDiv);
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function showTypingIndicator() {
+            isTyping = true;
+            statusText.textContent = languages[currentLanguage].statusThinking;
+            typingIndicator.style.display = 'flex';
+            chatMessages.appendChild(typingIndicator);
+            scrollToBottom();
+        }
+
+        function hideTypingIndicator() {
+            isTyping = false;
+            statusText.textContent = languages[currentLanguage].statusReady;
+            typingIndicator.style.display = 'none';
+            if (typingIndicator.parentNode) {
+                typingIndicator.parentNode.removeChild(typingIndicator);
+            }
+        }
+
+        function clearChat() {
+            // Remove all message elements
+            const messages = chatMessages.querySelectorAll('.message');
+            messages.forEach(function(msg) {
+                msg.remove();
+            });
+            
+            // Show welcome message again
+            welcomeMessage.style.display = 'block';
+            updateLanguageUI();
+            
+            // Reset chat history
+            initializeChat();
+            
+            statusText.textContent = languages[currentLanguage].statusReady;
+            messageInput.focus();
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function saveChatToHistory(question, response) {
+            const chatPreview = question.substring(0, 50) + (question.length > 50 ? '...' : '');
+
+            const existingChatIndex = savedChats.findIndex(function(chat) {
+                return chat.id === currentChatId;
+            });
+            
+            const chatData = {
+                id: currentChatId,
+                date: new Date().toLocaleString(),
+                language: currentLanguage,
+                preview: chatPreview,
+                messages: [
+                    { role: 'user', content: question },
+                    { role: 'assistant', content: response }
+                ]
+            };
+
+            if (existingChatIndex >= 0) {
+                // Update existing chat by appending new messages
+                savedChats[existingChatIndex].messages.push({ role: 'user', content: question });
+                savedChats[existingChatIndex].messages.push({ role: 'assistant', content: response });
+                savedChats[existingChatIndex].preview = chatPreview;
+            } else {
+                savedChats.unshift(chatData);
             }
 
-            // Display messages from history
-            data.messages.forEach(function(msg) {
-                const sender = msg.role === 'user' ? 'user' : 'bot';
-                addMessage(msg.content, sender);
-            });
-            
-            closeHistoryModal();
-            messageInput.focus();
-        })
-        .catch(error => {
-            console.error('Error loading chat session:', error);
-            alert('Could not load the selected chat.');
-        });
-}
+            // Keep only last 20 chats
+            savedChats = savedChats.slice(0, 20);
+        }
 
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializePage);
-    } else {
-        initializePage();
-    }
+        function openHistoryModal() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '<p style="text-align: center; color: #718096;">Loading history...</p>';
+            historyModal.style.display = 'block';
+        
+            fetch('/ai/history/')
+                .then(response => response.json())
+                .then(data => {
+                    historyList.innerHTML = ''; // Clear "Loading..." message
+                    if (data.history && data.history.length > 0) {
+                        data.history.forEach(function(chat) {
+                            const historyItem = document.createElement('div');
+                            historyItem.className = 'history-item';
+                            
+                            // Call a new function to load the specific chat on click
+                            historyItem.onclick = function() {
+                                loadChatHistoryFromServer(chat.id);
+                            };
+                            
+                            const langText = chat.language === 'ml' ? 'മലയാളം' : 'English';
+                            historyItem.innerHTML = `<div class="history-date">${chat.date} • ${langText}</div><div class="history-preview">${chat.preview}</div>`;
+                            
+                            historyList.appendChild(historyItem);
+                        });
+                    } else {
+                        historyList.innerHTML = '<p style="text-align: center; color: #718096;">No chat history found</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching chat history:', error);
+                    historyList.innerHTML = '<p style="text-align: center; color: #d32f2f;">Could not load history.</p>';
+                });
+        }    
 
-})();
-        </script>
+        function closeHistoryModal() {
+            historyModal.style.display = 'none';
+        }
+
+        // Load chat history from server
+        function loadChatHistoryFromServer(sessionId) {
+            fetch(`/ai/history/${sessionId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    // Clear current chat messages
+                    chatMessages.innerHTML = '';
+                    welcomeMessage.style.display = 'none';
+
+                    // Load chat data
+                    currentChatId = data.id;
+                    
+                    // Set language and update UI elements like buttons and placeholders
+                    if (currentLanguage !== data.language) {
+                        currentLanguage = data.language;
+                        updateLanguageUI();
+                    }
+
+                    // Display messages from history
+                    data.messages.forEach(function(msg) {
+                        const sender = msg.role === 'user' ? 'user' : 'bot';
+                        addMessage(msg.content, sender);
+                    });
+                    
+                    closeHistoryModal();
+                    messageInput.focus();
+                })
+                .catch(error => {
+                    console.error('Error loading chat session:', error);
+                    alert('Could not load the selected chat.');
+                });
+        }
+
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializePage);
+        } else {
+            initializePage();
+        }
+
+    })();
+    </script>
 
 {% endblock %}
